@@ -1,0 +1,41 @@
+modLoader = "javafml"
+loaderVersion = "[4,)"
+license = "LGPL-3.0-only"
+
+[[mods]]
+modId = "zakoopt"
+version = "${version}"
+displayName = "ZakoOpt"
+description = "Оптимизация клиента поверх Sodium."
+authors = "Zako"
+displayURL = "https://github.com/3ako/ZakoOpt"
+logoFile = "assets/zakoopt/icon.png"
+
+[modproperties.zakoopt]
+"sodium:config_api_user" = "zako.opt.SodiumOptions"
+
+${neo_mixins}
+
+[[dependencies.zakoopt]]
+modId = "minecraft"
+type = "required"
+versionRange = "[${minecraft}]"
+side = "CLIENT"
+
+[[dependencies.zakoopt]]
+modId = "neoforge"
+type = "required"
+versionRange = "[26.3,)"
+side = "CLIENT"
+
+[[dependencies.zakoopt]]
+modId = "immediatelyfast"
+type = "required"
+versionRange = "*"
+side = "CLIENT"
+
+[[dependencies.zakoopt]]
+modId = "sodium"
+type = "optional"
+versionRange = "[${sodium_min},)"
+side = "CLIENT"

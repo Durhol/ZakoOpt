@@ -101,9 +101,9 @@ configure(subprojects.findAll { !(it.name in layerNames) }) {
 
 		processResources {
 			def props = [version: rootProject.version, minecraft: minecraft_version, minecraft_range: project.findProperty('minecraft_range') ?: "~${minecraft_version}", sodium_min: sodium_min, sodium_recommended: sodium_recommended,
-				mixins: groovy.json.JsonOutput.toJson(mixinConfigs)]
+				mixins: groovy.json.JsonOutput.toJson(mixinConfigs), neo_mixins: mixinConfigs.collect { "[[mixins]]\nconfig = \"${it}\"" }.join('\n\n')]
 			inputs.properties props
-			filesMatching("fabric.mod.json") { expand props }
+			filesMatching(["fabric.mod.json", "META-INF/neoforge.mods.toml"]) { expand props }
 		}
 
 		tasks.withType(JavaCompile).configureEach { it.options.release = java_release as int }
