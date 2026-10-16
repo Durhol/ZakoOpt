@@ -1,6 +1,5 @@
 package zako.opt;
 
-import net.fabricmc.loader.api.FabricLoader;
 import org.objectweb.asm.tree.ClassNode;
 import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin;
 import org.spongepowered.asm.mixin.extensibility.IMixinInfo;
@@ -10,8 +9,8 @@ import java.util.Set;
 
 // mixins into Sodium's own classes are added only when Sodium is installed; each is built only for some versions
 public class MixinPlugin implements IMixinConfigPlugin {
-	public static final boolean SODIUM = FabricLoader.getInstance().isModLoaded("sodium");
-	public static final boolean VULKAN = FabricLoader.getInstance().isModLoaded("vulkanmod");
+	public static final boolean SODIUM = Platform.isModLoaded("sodium");
+	public static final boolean VULKAN = Platform.isModLoaded("vulkanmod");
 	// Lunar is no Fabric mod: its launcher class is the tell
 	public static final boolean LUNAR = MixinPlugin.class.getClassLoader().getResource("com/moonsworth/lunar/genesis/Genesis.class") != null;
 	private static final List<String> LUNAR_MIXINS = List.of("gl.LunarMultiDrawMixin", "gl.LunarSodiumMultiDrawMixin", "block.BlockEntityRenderDispatcherCullMixin");
