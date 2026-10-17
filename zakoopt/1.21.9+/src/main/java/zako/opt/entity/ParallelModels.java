@@ -60,13 +60,21 @@ public class ParallelModels {
 	}
 
 	// render thread: poses the model and queues its vertices; the caller checks the vertex format and that nothing
-	// else (outline, block cracks) has to see the same model
+	// else (outline, block cracks) has to see the same model. null: another mod draws some part itself, the caller
+	// renders this model the vanilla way (which poses it again)
 	@SuppressWarnings({"unchecked", "rawtypes"})
 	public Job add(Model model, Object state, PoseStack.Pose pose, int light, int overlay, int color, TextureAtlasSprite sprite) {
 		model.setupAnim(state);
 		ModelPart root = model.root();
 		Flat flat = FLATS.computeIfAbsent(root, Flat::new);
 		int n = flat.parts.length;
+		if (SkinLayers.ACTIVE) {
+			for (int i = 0; i < n; i++) {
+				if (SkinLayers.meshed(i == 0 ? root : flat.parts[i])) {
+					return null;
+				}
+			}
+		}
 		Job job;
 		if (BUILT.size() < POOL.size()) {
 			job = POOL.get(BUILT.size());

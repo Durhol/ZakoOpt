@@ -134,6 +134,13 @@ public class ParallelModels {
 		}
 		ModelPart root = model.root();
 		Flat flat = FLATS.computeIfAbsent(root, Flat::new);
+		if (SkinLayers.ACTIVE) {
+			for (int i = 0; i < flat.parts.length; i++) {
+				if (SkinLayers.meshed(i == 0 ? root : flat.parts[i])) {
+					return false;
+				}
+			}
+		}
 		Job job;
 		if (JOBS.size() < POOL.size()) {
 			job = POOL.get(JOBS.size());
