@@ -152,6 +152,19 @@ configure(subprojects.findAll { !(it.name in layerNames) }) {
 			}
 		}
 
+		// 26.x jars also run on NeoForge: its API only to compile NeoPlatform, NeoMod and the NeoForge-only mixins against
+		if ('26.x' in layers) {
+			repositories {
+				maven { url = 'https://maven.neoforged.net/releases' }
+			}
+			dependencies {
+				compileOnly("net.neoforged:neoforge:${neoforge_version}:universal") { transitive = false }
+				compileOnly("net.neoforged.fancymodloader:loader:${fml_version}") { transitive = false }
+				compileOnly("net.neoforged:mergetool:2.0.7:api") { transitive = false }
+				compileOnly "org.apache.maven:maven-artifact:3.10.0"
+			}
+		}
+
 		jar {
 			from(rootProject.file("../COPYING"))
 			from(rootProject.file("../COPYING.LESSER"))

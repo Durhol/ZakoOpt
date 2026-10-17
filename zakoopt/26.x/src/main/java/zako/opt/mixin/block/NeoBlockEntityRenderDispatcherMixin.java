@@ -24,23 +24,23 @@ import zako.opt.block.CachedValidity;
 import zako.opt.entity.PooledState;
 import zako.opt.feature.Features;
 
-// NeoForge only: it moves the body of tryExtractRenderState into an overload taking a Frustum, which the level extractor calls directly;
-// the cull, validity cache and state pool of the 1.21.9+ mixins, aimed at that overload
 @Mixin(BlockEntityRenderDispatcher.class)
 public class NeoBlockEntityRenderDispatcherMixin {
+	// 26.2+ passes a boolean before the Frustum, 26.1.2 does not
 	private static final String METHOD = "tryExtractRenderState(Lnet/minecraft/world/level/block/entity/BlockEntity;FLnet/minecraft/client/renderer/feature/ModelFeatureRenderer$CrumblingOverlay;ZLnet/minecraft/client/renderer/culling/Frustum;)Lnet/minecraft/client/renderer/blockentity/state/BlockEntityRenderState;";
+	private static final String METHOD_26_1 = "tryExtractRenderState(Lnet/minecraft/world/level/block/entity/BlockEntity;FLnet/minecraft/client/renderer/feature/ModelFeatureRenderer$CrumblingOverlay;Lnet/minecraft/client/renderer/culling/Frustum;)Lnet/minecraft/client/renderer/blockentity/state/BlockEntityRenderState;";
 
 	@Shadow
 	private Vec3 cameraPos;
 
-	@Inject(method = METHOD, at = @At("HEAD"), cancellable = true)
+	@Inject(method = {METHOD, METHOD_26_1}, at = @At("HEAD"), cancellable = true)
 	private void zakoopt$earlyCull(CallbackInfoReturnable<BlockEntityRenderState> cir, @Local(argsOnly = true) BlockEntity blockEntity) {
 		if (BlockEntityDistance.culledEarly((BlockEntityRenderDispatcher) (Object) this, blockEntity, cameraPos)) {
 			cir.setReturnValue(null);
 		}
 	}
 
-	@WrapOperation(method = METHOD, at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/block/entity/BlockEntityType;isValid(Lnet/minecraft/world/level/block/state/BlockState;)Z"))
+	@WrapOperation(method = {METHOD, METHOD_26_1}, at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/block/entity/BlockEntityType;isValid(Lnet/minecraft/world/level/block/state/BlockState;)Z"))
 	private boolean zakoopt$cachedValid(BlockEntityType<?> type, BlockState state, Operation<Boolean> original, @Local(argsOnly = true) BlockEntity blockEntity) {
 		if (!Features.SIGN_CACHE.on) {
 			return original.call(type, state);
@@ -52,7 +52,7 @@ public class NeoBlockEntityRenderDispatcherMixin {
 		return cache.zakoopt$valid();
 	}
 
-	@WrapOperation(method = METHOD, at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/blockentity/BlockEntityRenderer;shouldRender(Lnet/minecraft/world/level/block/entity/BlockEntity;Lnet/minecraft/world/phys/Vec3;)Z"))
+	@WrapOperation(method = {METHOD, METHOD_26_1}, at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/blockentity/BlockEntityRenderer;shouldRender(Lnet/minecraft/world/level/block/entity/BlockEntity;Lnet/minecraft/world/phys/Vec3;)Z"))
 	private boolean zakoopt$cachedDistance(BlockEntityRenderer<BlockEntity, ?> renderer, BlockEntity blockEntity, Vec3 camera, Operation<Boolean> original) {
 		if (!Features.MICRO_OPTS.fewerChecks || blockEntity.getLevel() == null) {
 			return original.call(renderer, blockEntity, camera);
@@ -65,7 +65,7 @@ public class NeoBlockEntityRenderDispatcherMixin {
 		return cache.zakoopt$inDistance();
 	}
 
-	@WrapOperation(method = METHOD, at = @At(value = "INVOKE",
+	@WrapOperation(method = {METHOD, METHOD_26_1}, at = @At(value = "INVOKE",
 			target = "Lnet/minecraft/client/renderer/blockentity/BlockEntityRenderer;createRenderState()Lnet/minecraft/client/renderer/blockentity/state/BlockEntityRenderState;"))
 	private BlockEntityRenderState zakoopt$pooled(BlockEntityRenderer<?, ?> renderer, Operation<BlockEntityRenderState> original,
 												  @Local(argsOnly = true) BlockEntity blockEntity) {
