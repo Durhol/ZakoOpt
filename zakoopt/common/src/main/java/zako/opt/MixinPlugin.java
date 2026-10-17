@@ -1,6 +1,5 @@
 package zako.opt;
 
-import net.fabricmc.loader.api.FabricLoader;
 import org.objectweb.asm.tree.ClassNode;
 import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin;
 import org.spongepowered.asm.mixin.extensibility.IMixinInfo;
@@ -10,12 +9,16 @@ import java.util.Set;
 
 // mixins into Sodium's own classes are added only when Sodium is installed; each is built only for some versions
 public class MixinPlugin implements IMixinConfigPlugin {
-	public static final boolean SODIUM = FabricLoader.getInstance().isModLoaded("sodium");
-	public static final boolean VULKAN = FabricLoader.getInstance().isModLoaded("vulkanmod");
+	public static final boolean SODIUM = Platform.isModLoaded("sodium");
+	public static final boolean VULKAN = Platform.isModLoaded("vulkanmod");
 	// Lunar is no Fabric mod: its launcher class is the tell
 	public static final boolean LUNAR = MixinPlugin.class.getClassLoader().getResource("com/moonsworth/lunar/genesis/Genesis.class") != null;
 	private static final List<String> LUNAR_MIXINS = List.of("gl.LunarMultiDrawMixin", "gl.LunarSodiumMultiDrawMixin", "block.BlockEntityRenderDispatcherCullMixin");
 	private static final List<String> NO_LUNAR_MIXINS = List.of("block.BlockEntityRenderDispatcherCullWrapMixin");
+	// NeoForge runs the same jar without Fabric Loader; the OFF mixins have no target there, the ONLY ones stand in for them
+	public static final boolean NEOFORGE = MixinPlugin.class.getClassLoader().getResource("net/fabricmc/loader/api/FabricLoader.class") == null;
+	private static final List<String> NEOFORGE_OFF = List.of("block.BlockEntityRenderDispatcherCullWrapMixin", "block.BlockEntityRenderDispatcherMixin", "block.BlockEntityRenderStatePoolMixin");
+	private static final List<String> NEOFORGE_ONLY = List.of("block.NeoBlockEntityRenderDispatcherMixin");
 	public static final List<String> SODIUM_MIXINS = List.of("entity.SodiumEntityRendererMixin", "gl.VertexConsumerUtilsMixin", "block.NonTerrainBlockRenderContextMixin",
 			"gl.LunarSodiumMultiDrawMixin", "gl.SodiumOcclusionCullMixin", "gl.SodiumTerrainTimerMixin", "block.SodiumLeafCullMixin", "block.SodiumLeafCullOldMixin", "block.SodiumFarLeavesMixin", "gl.SodiumCubicSamplerMixin");
 	// Sodium writes model cubes its own fast way; ours stands in where it is missing
@@ -45,7 +48,7 @@ public class MixinPlugin implements IMixinConfigPlugin {
 
 	public static boolean applies(String mixin) {
 		return built(mixin) && (SODIUM || !SODIUM_MIXINS.contains(mixin)) && !(SODIUM && NO_SODIUM_MIXINS.contains(mixin)) && !(VULKAN && openGl(mixin))
-				&& (LUNAR || !LUNAR_MIXINS.contains(mixin)) && !(LUNAR && NO_LUNAR_MIXINS.contains(mixin));
+				&& (LUNAR || !LUNAR_MIXINS.contains(mixin)) && !(LUNAR && NO_LUNAR_MIXINS.contains(mixin)) && !(NEOFORGE && NEOFORGE_OFF.contains(mixin)) && (NEOFORGE || !NEOFORGE_ONLY.contains(mixin));
 	}
 
 	// the HUD cache draws into its own OpenGL framebuffer, which flickers under VulkanMod; the chat batch is plain GuiGraphics;
@@ -61,7 +64,7 @@ public class MixinPlugin implements IMixinConfigPlugin {
 	public boolean shouldApplyMixin(String targetClassName, String mixinClassName) {
 		String mixin = mixinClassName.substring("zako.opt.mixin.".length());
 		return !(VULKAN && openGl(mixin)) && !(SODIUM && NO_SODIUM_MIXINS.contains(mixin)) && (LUNAR || !LUNAR_MIXINS.contains(mixin))
-				&& !(LUNAR && NO_LUNAR_MIXINS.contains(mixin));
+				&& !(LUNAR && NO_LUNAR_MIXINS.contains(mixin)) && !(NEOFORGE && NEOFORGE_OFF.contains(mixin)) && (NEOFORGE || !NEOFORGE_ONLY.contains(mixin));
 	}
 
 	@Override

@@ -2,7 +2,6 @@ package zako.opt;
 
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
-import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import zako.opt.feature.Feature;
@@ -18,7 +17,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 @UtilityClass
 public class Guard {
 	// dev runs from Gradle crash on our errors instead, so they get seen; -Dzakoopt.guard.crash=true does the same in a real game
-	private final boolean CRASH = FabricLoader.getInstance().isDevelopmentEnvironment() || Boolean.getBoolean("zakoopt.guard.crash");
+	private final boolean CRASH = Platform.isDevelopment() || Boolean.getBoolean("zakoopt.guard.crash");
 	private final Set<String> FAILED = ConcurrentHashMap.newKeySet();
 	// features turned off since the player was last told; told in chat once a world is open
 	private final List<Feature> UNTOLD = new CopyOnWriteArrayList<>();

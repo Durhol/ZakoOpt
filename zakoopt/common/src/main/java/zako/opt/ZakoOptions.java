@@ -1,7 +1,6 @@
 package zako.opt;
 
 import lombok.experimental.UtilityClass;
-import net.fabricmc.loader.api.FabricLoader;
 import zako.opt.feature.Feature;
 import zako.opt.feature.FeatureGroup;
 import zako.opt.feature.Features;
@@ -18,7 +17,7 @@ import java.util.function.Supplier;
 // the options screens' view of the features: groups of switches and sliders, built from the feature registry
 @UtilityClass
 public class ZakoOptions {
-	public final String VERSION = FabricLoader.getInstance().getModContainer("zakoopt").orElseThrow().getMetadata().getVersion().getFriendlyString();
+	public final String VERSION = Platform.loader().version("zakoopt");
 
 	public sealed interface Option permits Toggle, Distance {
 		String key();

@@ -6,7 +6,6 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
-import net.fabricmc.loader.api.FabricLoader;
 import zako.opt.feature.Features;
 
 import java.io.IOException;
@@ -19,16 +18,15 @@ import java.nio.file.StandardCopyOption;
 @UtilityClass
 @Slf4j(topic = "zakoopt")
 public class ZakoOptConfig {
-	public final boolean IRIS = FabricLoader.getInstance().isModLoaded("iris");
+	public final boolean IRIS = Platform.isModLoaded("iris");
 	// mods that draw the HUD their own way; Soup Visual renders the extracted HUD itself mid-extraction, so the cache's texture
 	// stayed empty and the HUD blinked
 	public final String FOREIGN_HUD_MOD = java.util.stream.Stream.of("axolotlclient", "exordium", "gnetum", "soupapi")
-			.flatMap(id -> FabricLoader.getInstance().getModContainer(id).stream())
-			.map(mod -> mod.getMetadata().getName()).findFirst().orElse(null);
+			.map(Platform.loader()::name).filter(java.util.Objects::nonNull).findFirst().orElse(null);
 	public final boolean FOREIGN_HUD = FOREIGN_HUD_MOD != null;
 	private final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 	public final boolean RING_PRESENT = ZakoOptConfig.class.getClassLoader().getResource("zako/opt/gl/ImmediateRing.class") != null && !MixinPlugin.VULKAN;
-	private final Path FILE = FabricLoader.getInstance().getConfigDir().resolve("zakoopt.json");
+	private final Path FILE = Platform.configDir().resolve("zakoopt.json");
 	public final int CORES = Runtime.getRuntime().availableProcessors();
 	// the whole mod's effect, for comparing against plain play; the features keep their values
 	public boolean enabled = true;

@@ -23,7 +23,7 @@ public class LevelRendererOutlineMixin {
 	private boolean zakoopt$outlineDirty = true;
 
 	// true when something was submitted with an outline this frame
-	@ModifyExpressionValue(method = "addMainPass", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/feature/FeatureRenderDispatcher$PreparedFrame;hasAnyOutline()Z"))
+	@ModifyExpressionValue(method = "addMainPass*", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/feature/FeatureRenderDispatcher$PreparedFrame;hasAnyOutline()Z"))
 	private boolean zakoopt$glowing(boolean any) {
 		zakoopt$glowing = any;
 		return any;
