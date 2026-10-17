@@ -49,7 +49,7 @@ public class LivingEntityRendererChecksMixin {
 	}
 
 	// isInvisibleTo answers isInvisible() or false, so a visible entity needs no team lookup
-	@WrapOperation(method = "shouldShowName", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/LivingEntity;isInvisibleTo(Lnet/minecraft/world/entity/player/Player;)Z"))
+	@WrapOperation(method = "shouldShowName(Lnet/minecraft/world/entity/LivingEntity;)Z", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/LivingEntity;isInvisibleTo(Lnet/minecraft/world/entity/player/Player;)Z"))
 	private boolean zakoopt$visibleSkipsTeam(LivingEntity entity, Player player, Operation<Boolean> original) {
 		return (entity.isInvisible() || !Features.MICRO_OPTS.fewerChecks) && original.call(entity, player);
 	}

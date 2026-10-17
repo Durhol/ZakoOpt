@@ -28,7 +28,7 @@ public class ParticleEngineParallelMixin {
 	@Unique
 	private boolean zakoopt$written;
 
-	@WrapOperation(method = "render", at = @At(value = "INVOKE",
+	@WrapOperation(method = {"render(Lnet/minecraft/client/renderer/LightTexture;Lnet/minecraft/client/Camera;F)V", "render(Lnet/minecraft/client/renderer/LightTexture;Lnet/minecraft/client/Camera;FLnet/minecraft/client/renderer/culling/Frustum;Ljava/util/function/Predicate;)V"}, at = @At(value = "INVOKE",
 			target = "Lnet/minecraft/client/particle/ParticleRenderType;begin(Lcom/mojang/blaze3d/vertex/Tesselator;Lnet/minecraft/client/renderer/texture/TextureManager;)Lcom/mojang/blaze3d/vertex/BufferBuilder;"))
 	private BufferBuilder zakoopt$parallel(ParticleRenderType type, Tesselator tesselator, TextureManager textures, Operation<BufferBuilder> original,
 										   LightTexture light, Camera camera, float partialTick, @Local Queue<Particle> particles) {
@@ -39,7 +39,7 @@ public class ParticleEngineParallelMixin {
 		return builder;
 	}
 
-	@WrapOperation(method = "render", at = @At(value = "INVOKE", target = "Ljava/util/Queue;iterator()Ljava/util/Iterator;"))
+	@WrapOperation(method = {"render(Lnet/minecraft/client/renderer/LightTexture;Lnet/minecraft/client/Camera;F)V", "render(Lnet/minecraft/client/renderer/LightTexture;Lnet/minecraft/client/Camera;FLnet/minecraft/client/renderer/culling/Frustum;Ljava/util/function/Predicate;)V"}, at = @At(value = "INVOKE", target = "Ljava/util/Queue;iterator()Ljava/util/Iterator;"))
 	private Iterator<Particle> zakoopt$skipWritten(Queue<Particle> particles, Operation<Iterator<Particle>> original) {
 		if (zakoopt$written) {
 			zakoopt$written = false;
