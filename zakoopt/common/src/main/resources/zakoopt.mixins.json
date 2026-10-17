@@ -12,18 +12,13 @@
 		"entity.DisplayCullMixin",
 		"entity.EntityAnimHolderMixin",
 		"entity.EntityNameMixin",
-		"entity.EntityRenderStateEntityMixin",
 		"entity.EntityRendererNameMixin",
-		"entity.EntityRendererLookupMixin",
-		"entity.EntityRendererStateMixin",
-		"entity.ItemClusterRenderStateMixin",
 		"entity.ItemEntityRestMixin",
 		"gl.BufferBuilderRawMixin",
 		"hud.DeltaTrackerHudMixin",
 		"particle.BubbleColumnUpParticleMixin",
 		"particle.ParticleAccessor",
-		"text.ClientLanguageMixin",
-		"gl.FrameGraphTimerMixin"
+		"text.ClientLanguageMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1

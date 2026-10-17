@@ -1,0 +1,16 @@
+{
+	"required": true,
+	"package": "zako.opt.mixin",
+	"plugin": "zako.opt.MixinPlugin",
+	"compatibilityLevel": "JAVA_21",
+	"client": [
+		"entity.EntityRenderStateEntityMixin",
+		"entity.EntityRendererStateMixin",
+		"entity.ItemClusterRenderStateMixin",
+		"entity.EntityRendererLookupMixin",
+		"gl.FrameGraphTimerMixin"
+	],
+	"injectors": {
+		"defaultRequire": 1
+	}
+}

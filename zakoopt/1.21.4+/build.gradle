@@ -1,0 +1,4 @@
+// code for every module on Minecraft 1.21.4 and newer (entity render states, frame graph); compiled by each of them against its own Minecraft
+plugins {
+	id 'java'
+}
