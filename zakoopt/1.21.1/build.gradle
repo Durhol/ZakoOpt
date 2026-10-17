@@ -15,3 +15,11 @@ dependencies {
 	modCompileOnly "maven.modrinth:modmenu:${modmenu_version}"
 	modLocalRuntime "maven.modrinth:modmenu:${modmenu_version}"
 }
+
+// the jar also runs on NeoForge 21.1: its API only to compile NeoPlatform, NeoMod and the NeoForge-only mixins against
+repositories {
+	maven { url = 'https://maven.neoforged.net/releases' }
+}
+dependencies {
+	compileOnly("net.neoforged:neoforge:${neoforge_version}:universal") { transitive = false }
+}
