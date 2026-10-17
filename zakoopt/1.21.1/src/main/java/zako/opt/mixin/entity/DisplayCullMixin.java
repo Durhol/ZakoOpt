@@ -2,28 +2,23 @@ package zako.opt.mixin.entity;
 
 import zako.opt.feature.Features;
 
-import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
-import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.world.entity.Display;
-import net.minecraft.world.entity.Entity;
 import net.minecraft.world.phys.AABB;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-// 1.21.1: every display sets Entity.noCulling and the renderer's frustum test reads it, so the test is where displays get culled
-@Mixin(EntityRenderer.class)
+// 1.21.1: displays skip the frustum test through Entity.noCulling, which DisplayCullRendererMixin takes back; the box has to
+// come from the display itself, since Sodium's own visibility check asks it directly
+@Mixin(Display.class)
 public abstract class DisplayCullMixin {
-	@ModifyExpressionValue(method = "shouldRender", at = @At(value = "FIELD", target = "Lnet/minecraft/world/entity/Entity;noCulling:Z"))
-	private boolean zakoopt$cull(boolean noCulling, Entity entity) {
-		return noCulling && !(entity instanceof Display && Features.DISPLAY_CULL.on);
-	}
-
 	// ponytail: a fixed 4-block box, text scaled past that can vanish at the screen edge; size it from the text if that shows up
-	@ModifyExpressionValue(method = "shouldRender", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/Entity;getBoundingBoxForCulling()Lnet/minecraft/world/phys/AABB;"))
-	private AABB zakoopt$box(AABB box, Entity entity) {
-		if (entity instanceof Display && entity.noCulling && Features.DISPLAY_CULL.on) {
-			return new AABB(entity.getX() - 4, entity.getY() - 4, entity.getZ() - 4, entity.getX() + 4, entity.getY() + 4, entity.getZ() + 4);
+	@Inject(method = "getBoundingBoxForCulling", at = @At("HEAD"), cancellable = true)
+	private void zakoopt$box(CallbackInfoReturnable<AABB> cir) {
+		Display self = (Display) (Object) this;
+		if (self.noCulling && Features.DISPLAY_CULL.on) {
+			cir.setReturnValue(new AABB(self.getX() - 4, self.getY() - 4, self.getZ() - 4, self.getX() + 4, self.getY() + 4, self.getZ() + 4));
 		}
-		return box;
 	}
 }
