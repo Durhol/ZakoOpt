@@ -7,7 +7,6 @@
 		"DebugScreenOverlayMixin",
 		"block.BlockEntityRenderDispatcherMixin",
 		"block.ChestRendererMixin",
-		"block.LevelRendererCrackMixin",
 		"block.LevelRendererCrackTessMixin",
 		"block.NeoLevelRendererCrackMixin",
 		"block.PistonHeadRendererCacheMixin",
