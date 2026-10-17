@@ -1,8 +1,8 @@
 package zako.opt.entity;
 
 import lombok.experimental.UtilityClass;
-import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.model.geom.ModelPart;
+import zako.opt.Platform;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
@@ -27,7 +27,7 @@ public class SkinLayers {
 	}
 
 	private MethodHandle find() {
-		if (!FabricLoader.getInstance().isModLoaded("skinlayers3d")) {
+		if (!Platform.isModLoaded("skinlayers3d")) {
 			return null;
 		}
 		try {
