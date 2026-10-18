@@ -7,6 +7,7 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import com.mojang.blaze3d.vertex.VertexFormatElement;
+import lombok.RequiredArgsConstructor;
 import lombok.experimental.UtilityClass;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
@@ -63,7 +64,12 @@ public class SpawnerMeshCache {
 
 	// the draw goes into buffers that keep its vertices, one segment per run of the same render type
 	public List<Segment> record(Consumer<MultiBufferSource> draw) {
-		Recorder recorder = new Recorder();
+		return record(draw, false);
+	}
+
+	// owned: the vertices live in memAlloc'd memory the caller hands back to free(); the spawner's meshes go with their entity instead
+	public List<Segment> record(Consumer<MultiBufferSource> draw, boolean owned) {
+		Recorder recorder = new Recorder(owned);
 		try {
 			draw.accept(recorder);
 		} finally {
@@ -195,8 +201,16 @@ public class SpawnerMeshCache {
 	}
 
 	// one segment per run of draws into the same render type, as the vanilla buffer source would see them
+	public void free(List<Segment> segments) {
+		for (Segment segment : segments) {
+			MemoryUtil.memFree(segment.vertices);
+		}
+	}
+
+	@RequiredArgsConstructor
 	private static final class Recorder implements MultiBufferSource {
 		final List<Segment> segments = new ArrayList<>();
+		final boolean owned;
 		RenderType type;
 		BufferBuilder builder;
 
@@ -217,7 +231,7 @@ public class SpawnerMeshCache {
 			try (MeshData mesh = builder.build()) {
 				if (mesh != null) {
 					ByteBuffer src = mesh.vertexBuffer();
-					ByteBuffer copy = ByteBuffer.allocateDirect(src.remaining());
+					ByteBuffer copy = owned ? MemoryUtil.memAlloc(src.remaining()) : ByteBuffer.allocateDirect(src.remaining());
 					MemoryUtil.memCopy(MemoryUtil.memAddress(src), MemoryUtil.memAddress(copy), src.remaining());
 					segments.add(index(type, copy, mesh.drawState().vertexCount()));
 				}

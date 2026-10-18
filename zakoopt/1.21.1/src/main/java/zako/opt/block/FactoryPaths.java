@@ -3,6 +3,7 @@ package zako.opt.block;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.simibubi.create.content.logistics.factoryBoard.FactoryPanelBehaviour;
 import com.simibubi.create.content.logistics.factoryBoard.FactoryPanelConnection;
+import com.simibubi.create.content.logistics.factoryBoard.FactoryPanelPosition;
 import com.simibubi.create.content.logistics.factoryBoard.FactoryPanelSupportBehaviour;
 import com.simibubi.create.content.redstone.displayLink.DisplayLinkBlockEntity;
 import com.simibubi.create.content.redstone.link.RedstoneLinkBlockEntity;
@@ -14,19 +15,23 @@ import net.minecraft.world.level.block.state.BlockState;
 import org.joml.Matrix3f;
 import zako.opt.feature.Features;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.WeakHashMap;
 import java.util.function.Consumer;
 
 // a factory gauge's arrow path is dozens of 4-vertex sprites, each with its own model lookup, three rotations and vertex loop;
 // it is drawn once in the gauge's own space and replayed through the gauge's pose while everything renderPath reads stays the same
 @UtilityClass
 public class FactoryPaths {
-	private final Map<FactoryPanelConnection, Entry> CACHE = new WeakHashMap<>();
+	// by where the path runs, not by the connection object: every block entity packet from the server decodes new connections
+	private final Map<Key, Entry> CACHE = new HashMap<>();
 	// Create's classes no longer match ours: the original draws from then on
 	private boolean off;
 	public boolean recording;
+
+	private record Key(FactoryPanelPosition to, FactoryPanelPosition from) {
+	}
 
 	private static final class Entry {
 		Level level;
@@ -70,7 +75,12 @@ public class FactoryPaths {
 					| (connection.success ? 512 : 0) | (Features.shaders() ? 1024 : 0);
 			int color = behaviour.getIngredientStatusColor();
 			float glow = behaviour.bulb.getValue(partialTicks);
-			Entry e = CACHE.computeIfAbsent(connection, c -> new Entry());
+			// ponytail: wholesale clear instead of LRU, the panels in view refill it within a frame
+			if (CACHE.size() >= 8192) {
+				CACHE.values().stream().filter(v -> v.mesh != null).forEach(v -> SpawnerMeshCache.free(v.mesh));
+				CACHE.clear();
+			}
+			Entry e = CACHE.computeIfAbsent(new Key(behaviour.getPanelPosition(), connection.from), k -> new Entry());
 			if (!e.same(level, state, behaviour.slot, path, flags, color, glow, light, overlay)) {
 				e.level = level;
 				e.state = state;
@@ -83,7 +93,11 @@ public class FactoryPaths {
 				e.overlay = overlay;
 				recording = true;
 				try {
-					e.mesh = SpawnerMeshCache.record(draw);
+					if (e.mesh != null) {
+						SpawnerMeshCache.free(e.mesh);
+						e.mesh = null;
+					}
+					e.mesh = SpawnerMeshCache.record(draw, true);
 				} finally {
 					recording = false;
 				}
