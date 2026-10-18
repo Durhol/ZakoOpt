@@ -7,9 +7,12 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.locale.Language;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.FormattedCharSequence;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import zako.opt.bench.Bench;
 import zako.opt.bench.MonitorScreen;
 import zako.opt.feature.Feature;
+import zako.opt.feature.FeatureGroup;
 import zako.opt.feature.Features;
 import zako.opt.update.UpdateUi;
 
@@ -43,7 +46,7 @@ public class ZakoOptScreen extends Panel {
 	private record Item(Feature feature, ZakoOptions.Toggle toggle, List<ZakoOptions.Option> settings) {
 	}
 
-	private record Section(ZakoOptions.Group group, List<Item> items) {
+	private record Section(ZakoOptions.Group group, List<Item> items, ItemStack icon) {
 	}
 
 	public ZakoOptScreen(Screen parent) {
@@ -60,10 +63,22 @@ public class ZakoOptScreen extends Panel {
 				}
 			}
 			if (!items.isEmpty()) {
-				sections.add(new Section(group, items));
+				sections.add(new Section(group, items, new ItemStack(icon(group.type()))));
 			}
 		}
 		heads = new int[sections.size()];
+	}
+
+	private static net.minecraft.world.item.Item icon(FeatureGroup group) {
+		return switch (group) {
+			case RENDER -> Items.COMPARATOR;
+			case ITEMS -> Items.DIAMOND;
+			case SPAWNERS -> Items.SPAWNER;
+			case BLOCKS -> Items.GRASS_BLOCK;
+			case PARTICLES -> Items.GLOWSTONE_DUST;
+			case INTERFACE -> Items.NAME_TAG;
+			case MEMORY -> Items.CHEST;
+		};
 	}
 
 	@Override
@@ -117,7 +132,7 @@ public class ZakoOptScreen extends Panel {
 
 		int side = 0;
 		for (Section s : sections) {
-			side = Math.max(side, font.width(s.group().type().title()) + font.width(s.items().size() + "/" + s.items().size()) + 22);
+			side = Math.max(side, font.width(s.group().type().title()) + font.width(s.items().size() + "/" + s.items().size()) + 34);
 		}
 		int top = y0 + BAR + 2, bottom = y1 - BAR - 2, sx1 = x0 + Math.min(side, w / 3);
 		c.fill(sx1, top, sx1 + 2, bottom, LINE);
@@ -133,7 +148,8 @@ public class ZakoOptScreen extends Panel {
 			} else if (over) {
 				c.fill(x0, ry, sx1, ry + ROW, HOVER);
 			}
-			c.text(s.group().type().title(), x0 + 8, ry + 4, empty ? OFF : current ? STRONG : over ? TEXT : MUTED);
+			c.item(s.icon(), x0 + 6, ry + 3, 0.625f);
+			c.text(s.group().type().title(), x0 + 20, ry + 4, empty ? OFF : current ? STRONG : over ? TEXT : MUTED);
 			String count = searching ? String.valueOf(found.get(i).size())
 					: s.items().stream().filter(it -> it.feature().value && it.feature().blocked() == null).count() + "/" + s.items().size();
 			c.text(Component.literal(count), sx1 - 6 - font.width(count), ry + 4, empty ? OFF : searching ? VISUAL : MUTED);

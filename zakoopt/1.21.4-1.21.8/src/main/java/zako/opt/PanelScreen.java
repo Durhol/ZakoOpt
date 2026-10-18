@@ -5,6 +5,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.FormattedCharSequence;
+import net.minecraft.world.item.ItemStack;
 
 public abstract class PanelScreen extends Screen {
 	private static final int GLFW_KEY_F3 = 292;
@@ -73,6 +74,13 @@ public abstract class PanelScreen extends Screen {
 			public void text(Component text, int x, int y, int argb, float scale) {
 				GuiPose.push(graphics, x, y, scale);
 				graphics.drawString(font, text, 0, 0, argb, false);
+				GuiPose.pop(graphics);
+			}
+
+			@Override
+			public void item(ItemStack stack, int x, int y, float scale) {
+				GuiPose.push(graphics, x, y, scale);
+				graphics.renderItem(stack, 0, 0);
 				GuiPose.pop(graphics);
 			}
 
