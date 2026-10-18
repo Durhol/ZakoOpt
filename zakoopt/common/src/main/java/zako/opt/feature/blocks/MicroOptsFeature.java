@@ -31,6 +31,8 @@ public class MicroOptsFeature extends Feature {
 	public boolean createItems;
 	// 1.21.1 with Create: package address patterns compiled once (single player and LAN, where the server runs in the game)
 	public boolean createAddresses;
+	// 1.21.1 with Create: Create block entities past 80 blocks skip their client tick
+	public boolean createFarTick;
 
 	@Override
 	public void refresh() {
@@ -44,5 +46,6 @@ public class MicroOptsFeature extends Feature {
 		createPaths = flag("micro_opts.create_paths", value);
 		createItems = flag("micro_opts.create_items", value);
 		createAddresses = flag("micro_opts.create_addresses", value);
+		createFarTick = flag("micro_opts.create_far_tick", value);
 	}
 }
