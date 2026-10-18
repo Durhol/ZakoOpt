@@ -9,7 +9,7 @@ import zako.opt.feature.FeatureGroup;
 	visual = true,
 	group = FeatureGroup.ITEMS,
 	enabled = false,
-	mixins = "entity.ItemClusterRenderStateMixin"
+	mixins = {"entity.ItemClusterRenderStateMixin", "entity.ItemEntityRendererMixin"}
 )
 public class ItemSingleCopyFeature extends Feature {
 }

@@ -8,7 +8,7 @@ import zako.opt.feature.FeatureGroup;
 @FeatureData(
 	key = "sign_cache",
 	group = FeatureGroup.BLOCKS,
-	mixins = "block.AbstractSignRendererMixin",
+	mixins = {"block.AbstractSignRendererMixin", "block.SignRendererMixin", "block.HangingSignRendererMixin"},
 	bench = BenchView.BLOCKS
 )
 public class SignCacheFeature extends Feature {
