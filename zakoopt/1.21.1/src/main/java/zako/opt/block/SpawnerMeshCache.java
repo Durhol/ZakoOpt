@@ -21,6 +21,7 @@ import org.joml.Vector3f;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
 import zako.opt.gl.RawVertices;
+import zako.opt.gl.ReserveBuffer;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -102,6 +103,21 @@ public class SpawnerMeshCache {
 			int normal = format.contains(VertexFormatElement.NORMAL) ? format.getOffset(VertexFormatElement.NORMAL) : -1;
 			// in runs that fit the 64 KB MemoryStack, whole quads or triangles each: a big block item's model alone can overflow it
 			int run = Math.max(12, CHUNK / stride / 12 * 12);
+			if (shift && target instanceof ReserveBuffer reserve && reserve.zakoopt$accepts(format)) {
+				// straight into the buffer's own memory: one copy instead of a stack copy and Sodium's push copying it again
+				int size = segment.count * stride;
+				long dst = reserve.zakoopt$address(reserve.zakoopt$reserve(segment.count));
+				MemoryUtil.memCopy(MemoryUtil.memAddress(segment.vertices), dst, size);
+				for (long v = dst + at, end = dst + size; v < end; v += stride) {
+					MemoryUtil.memPutFloat(v, MemoryUtil.memGetFloat(v) + tx);
+					MemoryUtil.memPutFloat(v + 4, MemoryUtil.memGetFloat(v + 4) + ty);
+					MemoryUtil.memPutFloat(v + 8, MemoryUtil.memGetFloat(v + 8) + tz);
+					if (uv2 >= 0 && MemoryUtil.memGetInt(v - at + uv2) == LIGHT_MARK) {
+						MemoryUtil.memPutInt(v - at + uv2, light);
+					}
+				}
+				continue;
+			}
 			if (shift) {
 				for (int first = 0; first < segment.count; first += run) {
 					int n = Math.min(run, segment.count - first);
