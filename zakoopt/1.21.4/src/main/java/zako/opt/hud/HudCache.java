@@ -14,6 +14,8 @@ import net.minecraft.client.Minecraft;
 @UtilityClass
 public class HudCache {
 	private TextureTarget target;
+	// the game's own main target, taken before the HUD: Lunar overrides getMainRenderTarget() with its own one while it draws
+	private RenderTarget main;
 	private boolean active;
 	private boolean refresh;
 	private long lastRefresh;
@@ -24,11 +26,12 @@ public class HudCache {
 		Minecraft mc = Minecraft.getInstance();
 		boolean was = active;
 		long now = System.nanoTime();
-		active = HudWorth.update(now, MonitorRate.intervalNs(now)) && Features.HUD_CACHE.on && renderLevel && mc.level != null && mc.screen == null && mc.getOverlay() == null;
+		active = HudWorth.update(now, MonitorRate.intervalNs(now)) && Features.HUD_CACHE.on && !HudWorth.isMainSwapped() && renderLevel && mc.level != null && mc.screen == null && mc.getOverlay() == null;
 		if (!active) {
 			HudDelta.idle();
 			return;
 		}
+		main = mc.getMainRenderTarget();
 		int w = mc.getWindow().getWidth(), h = mc.getWindow().getHeight();
 		refresh = !was || target == null || target.width != w || target.height != h || now - lastRefresh >= MonitorRate.intervalNs(now);
 		HudDelta.frame(refresh, mc.getDeltaTracker().getGameTimeDeltaTicks());
@@ -52,7 +55,15 @@ public class HudCache {
 	}
 
 	public RenderTarget redirect(RenderTarget requested) {
-		return drawing && requested != target && requested == Minecraft.getInstance().getMainRenderTarget() ? target : null;
+		if (!drawing) {
+			return null;
+		}
+		RenderTarget current = Minecraft.getInstance().getMainRenderTarget();
+		if (current != main) {
+			HudWorth.mainSwapped(current);
+			return null;
+		}
+		return requested == main ? target : null;
 	}
 
 	public void drawIntoTexture(Runnable draw) {
