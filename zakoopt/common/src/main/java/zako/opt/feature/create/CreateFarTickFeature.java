@@ -9,7 +9,7 @@ import zako.opt.feature.Setting;
 @FeatureData(
 	key = "create_far_tick",
 	group = FeatureGroup.CREATE,
-	mixins = "block.CreateFarTickMixin"
+	mixins = {"block.CreateFarTickMixin", "block.CreateLevelTickersMixin"}
 )
 public class CreateFarTickFeature extends Feature {
 	// from 64 up: block entities are drawn to 64 blocks, so nearer a resting machine would be seen standing still
