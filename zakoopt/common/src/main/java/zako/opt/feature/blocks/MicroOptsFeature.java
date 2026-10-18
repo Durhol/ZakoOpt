@@ -27,6 +27,8 @@ public class MicroOptsFeature extends Feature {
 	public boolean spawnerMobMesh;
 	// 1.21.1 with Create: a factory gauge's arrow path drawn once, then replayed
 	public boolean createPaths;
+	// 1.21.1 with Create: a value box's filter item drawn once, then replayed
+	public boolean createItems;
 
 	@Override
 	public void refresh() {
@@ -38,5 +40,6 @@ public class MicroOptsFeature extends Feature {
 		fastCubes = flag("micro_opts.fast_cubes", true);
 		spawnerMobMesh = flag("micro_opts.spawner_mob_mesh", true);
 		createPaths = flag("micro_opts.create_paths", value);
+		createItems = flag("micro_opts.create_items", value);
 	}
 }
