@@ -29,6 +29,8 @@ public class MicroOptsFeature extends Feature {
 	public boolean createPaths;
 	// 1.21.1 with Create: value box filters and items riding belts drawn once, then replayed
 	public boolean createItems;
+	// 1.21.1 with Create: package address patterns compiled once (single player and LAN, where the server runs in the game)
+	public boolean createAddresses;
 
 	@Override
 	public void refresh() {
@@ -41,5 +43,6 @@ public class MicroOptsFeature extends Feature {
 		spawnerMobMesh = flag("micro_opts.spawner_mob_mesh", true);
 		createPaths = flag("micro_opts.create_paths", value);
 		createItems = flag("micro_opts.create_items", value);
+		createAddresses = flag("micro_opts.create_addresses", value);
 	}
 }
