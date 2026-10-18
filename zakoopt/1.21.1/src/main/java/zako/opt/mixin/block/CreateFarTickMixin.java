@@ -19,8 +19,7 @@ import zako.opt.feature.Features;
 public class CreateFarTickMixin {
 	// on the client a Create block entity ticks only its looks (belt items, flaps, chute items), which nobody sees past the
 	// 64 blocks block entities are drawn to; the server keeps the real state and syncs it, so a skipped one is current again on approach.
-	// 80 blocks leaves room so nothing starts moving in view; Sable keeps sub-level blocks in plots far past the view distance,
-	// and those tick as before
+	// Sable keeps sub-level blocks in plots far past the view distance, and those tick as before
 	@Inject(require = 0, method = "tick", at = @At("HEAD"), cancellable = true)
 	private void zakoopt$farTick(Level level, BlockPos pos, BlockState state, BlockEntity be, CallbackInfo ci) {
 		if (!level.isClientSide || !Features.CREATE_FAR_TICK.on) {
@@ -31,7 +30,8 @@ public class CreateFarTickMixin {
 		double dx = pos.getX() + 0.5 - cam.x, dz = pos.getZ() + 0.5 - cam.z, dy = pos.getY() + 0.5 - cam.y;
 		double d = dx * dx + dy * dy + dz * dz;
 		double view = mc.options.getEffectiveRenderDistance() * 16 + 32;
-		if (d > 80 * 80 && dx * dx + dz * dz < view * view) {
+		int far = Features.CREATE_FAR_TICK.distance;
+		if (d > far * far && dx * dx + dz * dz < view * view) {
 			ci.cancel();
 		}
 	}
