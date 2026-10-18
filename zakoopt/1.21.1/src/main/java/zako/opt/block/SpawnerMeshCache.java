@@ -35,6 +35,7 @@ import java.util.function.Consumer;
 public class SpawnerMeshCache {
 	// a packed light vanilla never produces, so emissive parts (spider eyes) keep their own light
 	private final int LIGHT_MARK = 0x00370013;
+	private final int CHUNK = 16384;
 	private final ByteBufferBuilder SCRATCH = new ByteBufferBuilder(16384);
 	private final Map<Entity, Mesh> CACHE = new WeakHashMap<>();
 
@@ -87,7 +88,6 @@ public class SpawnerMeshCache {
 			int at = format.getOffset(VertexFormatElement.POSITION);
 			int uv2 = format.contains(VertexFormatElement.UV2) ? format.getOffset(VertexFormatElement.UV2) : -1;
 			int normal = format.contains(VertexFormatElement.NORMAL) ? format.getOffset(VertexFormatElement.NORMAL) : -1;
-			int size = segment.count * stride;
 			if (positions.length < segment.positions.length) {
 				positions = new float[segment.positions.length];
 			}
@@ -105,23 +105,28 @@ public class SpawnerMeshCache {
 				pose.transformNormal((byte) packed / 127.0F, (byte) (packed >> 8) / 127.0F, (byte) (packed >> 16) / 127.0F, tmp);
 				normals[n] = normal(tmp.x) & 0xFF | (normal(tmp.y) & 0xFF) << 8 | (normal(tmp.z) & 0xFF) << 16 | packed & 0xFF000000;
 			}
-			try (MemoryStack stack = MemoryStack.stackPush()) {
-				long dst = stack.nmalloc(16, size);
-				MemoryUtil.memCopy(MemoryUtil.memAddress(segment.vertices), dst, size);
-				int i = 0;
-				for (long v = dst, end = dst + size; v < end; v += stride, i++) {
-					int p = segment.positionIndex[i] * 3;
-					MemoryUtil.memPutFloat(v + at, positions[p]);
-					MemoryUtil.memPutFloat(v + at + 4, positions[p + 1]);
-					MemoryUtil.memPutFloat(v + at + 8, positions[p + 2]);
-					if (uv2 >= 0 && MemoryUtil.memGetInt(v + uv2) == LIGHT_MARK) {
-						MemoryUtil.memPutInt(v + uv2, light);
+			// in runs that fit the 64 KB MemoryStack, whole quads or triangles each: a big block item's model alone can overflow it
+			int run = Math.max(12, CHUNK / stride / 12 * 12);
+			for (int first = 0; first < segment.count; first += run) {
+				int n = Math.min(run, segment.count - first);
+				try (MemoryStack stack = MemoryStack.stackPush()) {
+					long dst = stack.nmalloc(16, n * stride);
+					MemoryUtil.memCopy(MemoryUtil.memAddress(segment.vertices) + (long) first * stride, dst, (long) n * stride);
+					int i = first;
+					for (long v = dst, end = dst + (long) n * stride; v < end; v += stride, i++) {
+						int p = segment.positionIndex[i] * 3;
+						MemoryUtil.memPutFloat(v + at, positions[p]);
+						MemoryUtil.memPutFloat(v + at + 4, positions[p + 1]);
+						MemoryUtil.memPutFloat(v + at + 8, positions[p + 2]);
+						if (uv2 >= 0 && MemoryUtil.memGetInt(v + uv2) == LIGHT_MARK) {
+							MemoryUtil.memPutInt(v + uv2, light);
+						}
+						if (normal >= 0) {
+							MemoryUtil.memPutInt(v + normal, normals[segment.normalIndex[i]]);
+						}
 					}
-					if (normal >= 0) {
-						MemoryUtil.memPutInt(v + normal, normals[segment.normalIndex[i]]);
-					}
+					RawVertices.push(target, stack, dst, n, format);
 				}
-				RawVertices.push(target, stack, dst, segment.count, format);
 			}
 		}
 		return true;
