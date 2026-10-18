@@ -13,7 +13,9 @@ import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.entity.EntityRenderDispatcher;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
+import org.joml.Matrix3f;
 import org.joml.Matrix4f;
+import org.joml.Matrix4fc;
 import org.joml.Vector3f;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
@@ -76,6 +78,10 @@ public class SpawnerMeshCache {
 	public boolean emit(List<Segment> segments, PoseStack.Pose pose, MultiBufferSource buffers, int light) {
 		Matrix4f matrix = pose.pose();
 		Vector3f tmp = new Vector3f();
+		// a block entity's pose only moves: positions shift in place and the recorded normals stand as they are
+		Matrix3f n3 = pose.normal();
+		boolean shift = (matrix.properties() & Matrix4fc.PROPERTY_TRANSLATION) != 0 && n3.m00() == 1.0F && n3.m11() == 1.0F && n3.m22() == 1.0F;
+		float tx = matrix.m30(), ty = matrix.m31(), tz = matrix.m32();
 		for (int s = 0; s < segments.size(); s++) {
 			Segment segment = segments.get(s);
 			VertexFormat format = segment.type.format();
@@ -88,6 +94,27 @@ public class SpawnerMeshCache {
 			int at = format.getOffset(VertexFormatElement.POSITION);
 			int uv2 = format.contains(VertexFormatElement.UV2) ? format.getOffset(VertexFormatElement.UV2) : -1;
 			int normal = format.contains(VertexFormatElement.NORMAL) ? format.getOffset(VertexFormatElement.NORMAL) : -1;
+			// in runs that fit the 64 KB MemoryStack, whole quads or triangles each: a big block item's model alone can overflow it
+			int run = Math.max(12, CHUNK / stride / 12 * 12);
+			if (shift) {
+				for (int first = 0; first < segment.count; first += run) {
+					int n = Math.min(run, segment.count - first);
+					try (MemoryStack stack = MemoryStack.stackPush()) {
+						long dst = stack.nmalloc(16, n * stride);
+						MemoryUtil.memCopy(MemoryUtil.memAddress(segment.vertices) + (long) first * stride, dst, (long) n * stride);
+						for (long v = dst + at, end = dst + (long) n * stride; v < end; v += stride) {
+							MemoryUtil.memPutFloat(v, MemoryUtil.memGetFloat(v) + tx);
+							MemoryUtil.memPutFloat(v + 4, MemoryUtil.memGetFloat(v + 4) + ty);
+							MemoryUtil.memPutFloat(v + 8, MemoryUtil.memGetFloat(v + 8) + tz);
+							if (uv2 >= 0 && MemoryUtil.memGetInt(v - at + uv2) == LIGHT_MARK) {
+								MemoryUtil.memPutInt(v - at + uv2, light);
+							}
+						}
+						RawVertices.push(target, stack, dst, n, format);
+					}
+				}
+				continue;
+			}
 			if (positions.length < segment.positions.length) {
 				positions = new float[segment.positions.length];
 			}
@@ -105,8 +132,6 @@ public class SpawnerMeshCache {
 				pose.transformNormal((byte) packed / 127.0F, (byte) (packed >> 8) / 127.0F, (byte) (packed >> 16) / 127.0F, tmp);
 				normals[n] = normal(tmp.x) & 0xFF | (normal(tmp.y) & 0xFF) << 8 | (normal(tmp.z) & 0xFF) << 16 | packed & 0xFF000000;
 			}
-			// in runs that fit the 64 KB MemoryStack, whole quads or triangles each: a big block item's model alone can overflow it
-			int run = Math.max(12, CHUNK / stride / 12 * 12);
 			for (int first = 0; first < segment.count; first += run) {
 				int n = Math.min(run, segment.count - first);
 				try (MemoryStack stack = MemoryStack.stackPush()) {
