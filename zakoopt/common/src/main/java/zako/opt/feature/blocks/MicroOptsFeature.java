@@ -27,7 +27,7 @@ public class MicroOptsFeature extends Feature {
 	public boolean spawnerMobMesh;
 	// 1.21.1 with Create: a factory gauge's arrow path drawn once, then replayed
 	public boolean createPaths;
-	// 1.21.1 with Create: a value box's filter item drawn once, then replayed
+	// 1.21.1 with Create: value box filters and items riding belts drawn once, then replayed
 	public boolean createItems;
 
 	@Override
