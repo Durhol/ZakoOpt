@@ -28,7 +28,7 @@ public class MixinPlugin implements IMixinConfigPlugin {
 	// Create's renderers, on NeoForge only: Create's Fabric port is not the code these were written against
 	public static final boolean CREATE = NEOFORGE && Platform.isModLoaded("create");
 	private static final List<String> CREATE_MIXINS = List.of("block.CreateFactoryPanelMixin", "block.CreateValueBoxMixin", "block.CreateBeltMixin", "block.CreatePackageAddressMixin", "block.CreateFarTickMixin", "block.CreateLevelTickersMixin",
-			"block.CreateBoundTickerAccessor", "block.CreateRebindableTickerAccessor");
+			"block.CreateBoundTickerAccessor", "block.CreateRebindableTickerAccessor", "block.CreateFrustumAccessor");
 	// Sodium writes model cubes its own fast way; ours stands in where it is missing
 	private static final List<String> NO_SODIUM_MIXINS = List.of("entity.ModelPartFastMixin");
 	// the immediate ring lives in OpenGL buffers; VulkanMod draws without them and rewrites RenderType.draw

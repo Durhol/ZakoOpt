@@ -8,12 +8,17 @@ import com.simibubi.create.content.logistics.factoryBoard.FactoryPanelSupportBeh
 import com.simibubi.create.content.redstone.displayLink.DisplayLinkBlockEntity;
 import com.simibubi.create.content.redstone.link.RedstoneLinkBlockEntity;
 import lombok.experimental.UtilityClass;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.culling.Frustum;
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.AABB;
 import org.joml.Matrix3f;
 import zako.opt.feature.Features;
+import zako.opt.mixin.block.CreateFrustumAccessor;
 
 import java.util.HashMap;
 import java.util.List;
@@ -41,6 +46,24 @@ public class FactoryPaths {
 		int flags, color, light, overlay;
 		float glow;
 		List<SpawnerMeshCache.Segment> mesh;
+		// the mesh's box in the gauge's own space, for the view test
+		float minX, minY, minZ, maxX, maxY, maxZ;
+
+		void bounds() {
+			minX = minY = minZ = Float.MAX_VALUE;
+			maxX = maxY = maxZ = -Float.MAX_VALUE;
+			for (SpawnerMeshCache.Segment segment : mesh) {
+				float[] p = segment.positions();
+				for (int i = 0; i < p.length; i += 3) {
+					minX = Math.min(minX, p[i]);
+					minY = Math.min(minY, p[i + 1]);
+					minZ = Math.min(minZ, p[i + 2]);
+					maxX = Math.max(maxX, p[i]);
+					maxY = Math.max(maxY, p[i + 1]);
+					maxZ = Math.max(maxZ, p[i + 2]);
+				}
+			}
+		}
 
 		boolean same(Level level, BlockState state, Object slot, List<Direction> path, int flags, int color, float glow, int light, int overlay) {
 			if (mesh == null || level != this.level || state != this.state || slot != this.slot || flags != this.flags || color != this.color
@@ -98,9 +121,16 @@ public class FactoryPaths {
 						e.mesh = null;
 					}
 					e.mesh = SpawnerMeshCache.record(draw, true);
+					e.bounds();
 				} finally {
 					recording = false;
 				}
+			}
+			// Create draws a gauge whatever its box, as its paths reach far: a path out of view is skipped here, all of it
+			Frustum frustum = ((CreateFrustumAccessor) Minecraft.getInstance().levelRenderer).zakoopt$frustum();
+			BlockPos at = behaviour.blockEntity.getBlockPos();
+			if (frustum != null && !frustum.isVisible(new AABB(at.getX() + e.minX, at.getY() + e.minY, at.getZ() + e.minZ, at.getX() + e.maxX, at.getY() + e.maxY, at.getZ() + e.maxZ))) {
+				return true;
 			}
 			return SpawnerMeshCache.emit(e.mesh, ms.last(), buffer, light);
 		} catch (RuntimeException | LinkageError t) {
