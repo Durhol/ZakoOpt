@@ -19,7 +19,7 @@ public class CreateFactoryPanelMixin {
 	@Inject(require = 0, method = "renderPath", at = @At("HEAD"), cancellable = true)
 	private static void zakoopt$cachedPath(FactoryPanelBehaviour behaviour, FactoryPanelConnection connection, float partialTicks, PoseStack ms, MultiBufferSource buffer,
 										   int light, int overlay, CallbackInfo ci) {
-		if (Features.MICRO_OPTS.createPaths && !FactoryPaths.recording && FactoryPaths.render(behaviour, connection, partialTicks, ms, buffer, light, overlay,
+		if (Features.CREATE_PATHS.on && !FactoryPaths.recording && FactoryPaths.render(behaviour, connection, partialTicks, ms, buffer, light, overlay,
 				recorder -> FactoryPanelRenderer.renderPath(behaviour, connection, partialTicks, new PoseStack(), recorder, light, overlay))) {
 			ci.cancel();
 		}

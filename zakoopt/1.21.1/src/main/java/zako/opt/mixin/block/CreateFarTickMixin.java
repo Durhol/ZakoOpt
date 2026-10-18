@@ -23,7 +23,7 @@ public class CreateFarTickMixin {
 	// and those tick as before
 	@Inject(require = 0, method = "tick", at = @At("HEAD"), cancellable = true)
 	private void zakoopt$farTick(Level level, BlockPos pos, BlockState state, BlockEntity be, CallbackInfo ci) {
-		if (!level.isClientSide || !Features.MICRO_OPTS.createFarTick) {
+		if (!level.isClientSide || !Features.CREATE_FAR_TICK.on) {
 			return;
 		}
 		Minecraft mc = Minecraft.getInstance();

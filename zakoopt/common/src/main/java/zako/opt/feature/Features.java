@@ -8,6 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.irisshaders.iris.api.v0.IrisApi;
 import zako.opt.ZakoOptConfig;
 import zako.opt.feature.blocks.*;
+import zako.opt.feature.create.*;
 import zako.opt.feature.items.*;
 import zako.opt.feature.particles.*;
 import zako.opt.feature.render.*;
@@ -66,6 +67,11 @@ public class Features {
 	public final CrackCacheFeature CRACK_CACHE = add(new CrackCacheFeature());
 	public final LookupCachesFeature LOOKUP_CACHES = add(new LookupCachesFeature());
 	public final MicroOptsFeature MICRO_OPTS = add(new MicroOptsFeature());
+
+	public final CreatePathsFeature CREATE_PATHS = add(new CreatePathsFeature());
+	public final CreateItemsFeature CREATE_ITEMS = add(new CreateItemsFeature());
+	public final CreateAddressesFeature CREATE_ADDRESSES = add(new CreateAddressesFeature());
+	public final CreateFarTickFeature CREATE_FAR_TICK = add(new CreateFarTickFeature());
 	public final FewerAllocationsFeature FEWER_ALLOCATIONS = add(new FewerAllocationsFeature());
 
 	public final ParticleLightFeature PARTICLE_LIGHT = add(new ParticleLightFeature());

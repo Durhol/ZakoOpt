@@ -14,6 +14,8 @@ public enum FeatureGroup {
 	ITEMS("items"),
 	SPAWNERS("spawners"),
 	BLOCKS("blocks"),
+	// shown only with Create installed: its features need Create's classes
+	CREATE("create"),
 	PARTICLES("particles"),
 	INTERFACE("interface"),
 	MEMORY("memory");

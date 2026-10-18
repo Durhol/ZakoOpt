@@ -18,7 +18,7 @@ import zako.opt.feature.Features;
 public class CreateValueBoxMixin {
 	@Inject(require = 0, method = "renderItemIntoValueBox", at = @At("HEAD"), cancellable = true)
 	private static void zakoopt$cachedItem(ItemStack filter, PoseStack ms, MultiBufferSource buffer, int light, int overlay, CallbackInfo ci) {
-		if (Features.MICRO_OPTS.createItems && !ItemMeshes.recording && !filter.isEmpty()
+		if (Features.CREATE_ITEMS.on && !ItemMeshes.recording && !filter.isEmpty()
 				&& ItemMeshes.render(ValueBoxRenderer.class, filter, Minecraft.getInstance().getItemRenderer().getModel(filter, null, null, 0), ms, buffer, light, overlay,
 				recorder -> ValueBoxRenderer.renderItemIntoValueBox(filter, new PoseStack(), recorder, light, overlay))) {
 			ci.cancel();

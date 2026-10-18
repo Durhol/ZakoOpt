@@ -25,14 +25,6 @@ public class MicroOptsFeature extends Feature {
 	public boolean fastCubes;
 	// 1.21.4: a spawner's mob drawn once, then replayed
 	public boolean spawnerMobMesh;
-	// 1.21.1 with Create: a factory gauge's arrow path drawn once, then replayed
-	public boolean createPaths;
-	// 1.21.1 with Create: value box filters and items riding belts drawn once, then replayed
-	public boolean createItems;
-	// 1.21.1 with Create: package address patterns compiled once (single player and LAN, where the server runs in the game)
-	public boolean createAddresses;
-	// 1.21.1 with Create: Create block entities past 80 blocks skip their client tick
-	public boolean createFarTick;
 
 	@Override
 	public void refresh() {
@@ -43,9 +35,5 @@ public class MicroOptsFeature extends Feature {
 		sharedItemBounds = flag("micro_opts.shared_item_bounds", value);
 		fastCubes = flag("micro_opts.fast_cubes", true);
 		spawnerMobMesh = flag("micro_opts.spawner_mob_mesh", true);
-		createPaths = flag("micro_opts.create_paths", value);
-		createItems = flag("micro_opts.create_items", value);
-		createAddresses = flag("micro_opts.create_addresses", value);
-		createFarTick = flag("micro_opts.create_far_tick", value);
 	}
 }

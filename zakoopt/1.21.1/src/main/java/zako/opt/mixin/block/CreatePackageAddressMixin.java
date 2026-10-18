@@ -23,7 +23,7 @@ public class CreatePackageAddressMixin {
 	@WrapOperation(require = 0, method = "matchAddress(Ljava/lang/String;Ljava/lang/String;)Z",
 			at = @At(value = "INVOKE", target = "Ljava/lang/String;matches(Ljava/lang/String;)Z"))
 	private static boolean zakoopt$cachedPattern(String text, String regex, Operation<Boolean> original) {
-		if (!Features.MICRO_OPTS.createAddresses) {
+		if (!Features.CREATE_ADDRESSES.on) {
 			return original.call(text, regex);
 		}
 		// ponytail: wholesale clear instead of LRU, a base has far fewer addresses than this

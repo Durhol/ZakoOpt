@@ -22,7 +22,7 @@ public class CreateBeltMixin {
 			target = "Lnet/minecraft/client/renderer/entity/ItemRenderer;render(Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/item/ItemDisplayContext;ZLcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;IILnet/minecraft/client/resources/model/BakedModel;)V"))
 	private void zakoopt$cachedItem(ItemRenderer renderer, ItemStack stack, ItemDisplayContext context, boolean left, PoseStack ms, MultiBufferSource buffer, int light, int overlay,
 									BakedModel model, Operation<Void> original) {
-		if (!Features.MICRO_OPTS.createItems || !ItemMeshes.render(BeltRenderer.class, stack, model, ms, buffer, light, overlay,
+		if (!Features.CREATE_ITEMS.on || !ItemMeshes.render(BeltRenderer.class, stack, model, ms, buffer, light, overlay,
 				recorder -> original.call(renderer, stack, context, left, new PoseStack(), recorder, light, overlay, model))) {
 			original.call(renderer, stack, context, left, ms, buffer, light, overlay, model);
 		}
