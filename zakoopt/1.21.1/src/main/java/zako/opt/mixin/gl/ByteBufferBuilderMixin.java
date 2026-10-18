@@ -47,13 +47,12 @@ public class ByteBufferBuilderMixin implements RingBuilders.Backed {
 		if (zakoopt$state != 1) {
 			return;
 		}
-		long address = ImmediateRing.reserveBuilder(zakoopt$type.format(), size);
+		// growing inside the ring copies everything so far back out of write-combined GPU memory, and a frame of block
+		// entities grows a builder dozens of times (2 FPS at a factory district): the first growth moves it to plain memory
+		long address = MemoryUtil.nmemAlloc(size);
 		// the old region stays reserved until the segment comes round again; only the live count changes
 		ImmediateRing.builderReleased();
-		if (address == 0) {
-			address = MemoryUtil.nmemAlloc(size);
-			zakoopt$state = 2;
-		}
+		zakoopt$state = 2;
 		MemoryUtil.memCopy(pointer, address, writeOffset);
 		pointer = address;
 		capacity = size;
