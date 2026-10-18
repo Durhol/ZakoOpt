@@ -20,7 +20,7 @@ subprojects {
 // (1.21.x runs on intermediary names, so a layer's classes cannot be shared as built)
 // a layer is named after the game versions it serves: 1.21.9+ starts at 1.21.9 because the 1.21.10 module also runs on 1.21.9,
 // 1.21.x is every 1.21 module, sodium-0.8 is every module built against Sodium 0.8 or newer; gradlew layerMap shows what comes from where
-def layerNames = ['common', 'sodium-0.8', '1.21.x', '1.21.4-1.21.8', '1.21.4-1.21.10', '1.21.8+', '1.21.9+', '1.21.8-1.21.10', '1.21.8-1.21.11', '1.21.9-1.21.11', '1.21.11+', '26.x', '26.2+']
+def layerNames = ['common', 'sodium-0.8', '1.21.x', '1.21.4+', '1.21.4-1.21.8', '1.21.4-1.21.10', '1.21.8+', '1.21.9+', '1.21.8-1.21.10', '1.21.8-1.21.11', '1.21.9-1.21.11', '1.21.11+', '26.x', '26.2+']
 configure(subprojects.findAll { !(it.name in layerNames) }) {
 	plugins.withId('java') {
 		base.archivesName = 'zakoopt'

@@ -17,8 +17,9 @@ public class MixinPlugin implements IMixinConfigPlugin {
 	private static final List<String> NO_LUNAR_MIXINS = List.of("block.BlockEntityRenderDispatcherCullWrapMixin");
 	// NeoForge runs the same jar without Fabric Loader; the OFF mixins have no target there, the ONLY ones stand in for them
 	public static final boolean NEOFORGE = MixinPlugin.class.getClassLoader().getResource("net/fabricmc/loader/api/FabricLoader.class") == null;
-	private static final List<String> NEOFORGE_OFF = List.of("block.BlockEntityRenderDispatcherCullWrapMixin", "block.BlockEntityRenderDispatcherMixin", "block.BlockEntityRenderStatePoolMixin");
-	private static final List<String> NEOFORGE_ONLY = List.of("block.NeoBlockEntityRenderDispatcherMixin");
+	private static final List<String> NEOFORGE_OFF = List.of("block.BlockEntityRenderDispatcherCullWrapMixin", "block.BlockEntityRenderDispatcherMixin", "block.BlockEntityRenderStatePoolMixin",
+			"block.LevelRendererCrackTessMixin");
+	private static final List<String> NEOFORGE_ONLY = List.of("block.NeoBlockEntityRenderDispatcherMixin", "block.NeoLevelRendererCrackMixin");
 	public static final List<String> SODIUM_MIXINS = List.of("entity.SodiumEntityRendererMixin", "gl.VertexConsumerUtilsMixin", "block.NonTerrainBlockRenderContextMixin",
 			"gl.LunarSodiumMultiDrawMixin", "gl.SodiumOcclusionCullMixin", "gl.SodiumTerrainTimerMixin", "block.SodiumLeafCullMixin", "block.SodiumLeafCullOldMixin", "block.SodiumFarLeavesMixin", "gl.SodiumCubicSamplerMixin");
 	// Sodium writes model cubes its own fast way; ours stands in where it is missing

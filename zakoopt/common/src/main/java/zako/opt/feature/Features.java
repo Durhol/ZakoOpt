@@ -63,6 +63,7 @@ public class Features {
 	public final BlockEntityCacheFeature BLOCK_ENTITY_CACHE = add(new BlockEntityCacheFeature());
 	public final BlockEntityEarlyCullFeature BLOCK_ENTITY_EARLY_CULL = add(new BlockEntityEarlyCullFeature());
 	public final SignCacheFeature SIGN_CACHE = add(new SignCacheFeature());
+	public final CrackCacheFeature CRACK_CACHE = add(new CrackCacheFeature());
 	public final LookupCachesFeature LOOKUP_CACHES = add(new LookupCachesFeature());
 	public final MicroOptsFeature MICRO_OPTS = add(new MicroOptsFeature());
 	public final FewerAllocationsFeature FEWER_ALLOCATIONS = add(new FewerAllocationsFeature());

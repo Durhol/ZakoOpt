@@ -1,0 +1,2 @@
+net.minecraft.resources.Identifier=net.minecraft.resources.ResourceLocation
+Identifier=ResourceLocation

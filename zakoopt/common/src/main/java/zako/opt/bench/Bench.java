@@ -73,8 +73,7 @@ public class Bench {
 
 	public void frame(long now) {
 		if (running) {
-			// the player keeps off the input for the whole test, and after a minute of that the game caps itself at 30 FPS
-			Minecraft.getInstance().getFramerateLimitTracker().onInputReceived();
+			Idle.keepAwake();
 		}
 		// the frame counters cost nothing while neither the test nor a panel showing them runs
 		if ((running || ProgressScreen.open()) && lastFrame != 0) {

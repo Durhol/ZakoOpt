@@ -1,0 +1,36 @@
+plugins {
+	id 'net.fabricmc.fabric-loom-remap'
+}
+
+dependencies {
+	minecraft "com.mojang:minecraft:${minecraft_version}"
+	mappings loom.officialMojangMappings()
+	modImplementation "net.fabricmc:fabric-loader:${loader_version}"
+	modImplementation "net.fabricmc.fabric-api:fabric-api:${fabric_api_version}"
+	modCompileOnly "maven.modrinth:sodium:${sodium_version}"
+	modCompileOnly "maven.modrinth:immediatelyfast:${immediatelyfast_version}"
+	modLocalRuntime "maven.modrinth:sodium:${sodium_version}"
+	modLocalRuntime "maven.modrinth:immediatelyfast:${immediatelyfast_version}"
+	modCompileOnly "maven.modrinth:iris:${iris_version}"
+	modCompileOnly "maven.modrinth:modmenu:${modmenu_version}"
+	modLocalRuntime "maven.modrinth:modmenu:${modmenu_version}"
+}
+
+// the jar also runs on NeoForge 21.1: its API only to compile NeoPlatform, NeoMod and the NeoForge-only mixins against
+repositories {
+	maven { url = 'https://maven.neoforged.net/releases' }
+}
+dependencies {
+	compileOnly("net.neoforged:neoforge:${neoforge_version}:universal") { transitive = false }
+	compileOnly("net.neoforged.fancymodloader:loader:${fml_version}") { transitive = false }
+	compileOnly("net.neoforged:mergetool:2.0.0:api") { transitive = false }
+	compileOnly "org.apache.maven:maven-artifact:3.10.0"
+}
+
+// NeoForge 21.1 runs on Mojang names: its jar is Loom's unmapped one (no refmap) without the Fabric metadata
+def neoJar = tasks.register('neoJar', Jar) {
+	archiveClassifier = 'neoforge'
+	from(zipTree(tasks.named('jar').flatMap { it.archiveFile }))
+	exclude 'fabric.mod.json'
+}
+tasks.named('build') { dependsOn neoJar }

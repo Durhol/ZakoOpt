@@ -94,6 +94,8 @@
   "zakoopt.option.fbo_share.tooltip": "Рендер и Sodium рисуют в один буфер кадра, без лишних переключений.",
   "zakoopt.option.sign_cache": "Кэш табличек",
   "zakoopt.option.sign_cache.tooltip": "Модель и текстура табличек берутся из кэша, а не ищутся каждый кадр.",
+  "zakoopt.option.crack_cache": "Кэш трещин",
+  "zakoopt.option.crack_cache.tooltip": "Трещины на ломаемых блоках (дрели, копка) не собираются заново каждый кадр, а берутся готовыми и рисуются все разом.",
   "zakoopt.option.state_pool": "Одно состояние на сущность",
   "zakoopt.option.state_pool.tooltip": "Данные сущностей не создаются заново каждый кадр. С шейдерами Iris выключается.",
   "zakoopt.option.entity_lod": "LOD сущностей",
