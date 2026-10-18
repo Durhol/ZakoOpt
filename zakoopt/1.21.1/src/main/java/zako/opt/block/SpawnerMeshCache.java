@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.WeakHashMap;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
 // the mob spinning in a spawner is a full entity render per spawner per frame, yet it never moves: it is drawn once in
 // its own space and replayed through the spawner's pose, positions and normals, with the light swapped in. Lost: the
@@ -39,7 +40,7 @@ public class SpawnerMeshCache {
 
 	// positions and normals shared by several vertices (a box's 24 corners are 8, its 4 vertices per face share a normal)
 	// go through the matrices once, as Sodium's cuboid writer does
-	private record Segment(RenderType type, ByteBuffer vertices, int count, float[] positions, int[] positionIndex, int[] normals, int[] normalIndex) {
+	public record Segment(RenderType type, ByteBuffer vertices, int count, float[] positions, int[] positionIndex, int[] normals, int[] normalIndex) {
 	}
 
 	private record Mesh(Object renderer, List<Segment> segments) {
@@ -51,26 +52,31 @@ public class SpawnerMeshCache {
 		Object renderer = dispatcher.getRenderer(entity);
 		Mesh mesh = CACHE.get(entity);
 		if (mesh == null || mesh.renderer != renderer) {
-			Recorder recorder = new Recorder();
-			try {
-				record.accept(recorder, LIGHT_MARK);
-			} finally {
-				recorder.flush();
-			}
-			mesh = new Mesh(renderer, recorder.segments);
+			mesh = new Mesh(renderer, record(recorder -> record.accept(recorder, LIGHT_MARK)));
 			CACHE.put(entity, mesh);
 		}
-		return emit(mesh, poseStack.last(), buffers, light);
+		return emit(mesh.segments, poseStack.last(), buffers, light);
+	}
+
+	// the draw goes into buffers that keep its vertices, one segment per run of the same render type
+	public List<Segment> record(Consumer<MultiBufferSource> draw) {
+		Recorder recorder = new Recorder();
+		try {
+			draw.accept(recorder);
+		} finally {
+			recorder.flush();
+		}
+		return recorder.segments;
 	}
 
 	private float[] positions = new float[0];
 	private int[] normals = new int[0];
 
-	private boolean emit(Mesh mesh, PoseStack.Pose pose, MultiBufferSource buffers, int light) {
+	public boolean emit(List<Segment> segments, PoseStack.Pose pose, MultiBufferSource buffers, int light) {
 		Matrix4f matrix = pose.pose();
 		Vector3f tmp = new Vector3f();
-		for (int s = 0; s < mesh.segments.size(); s++) {
-			Segment segment = mesh.segments.get(s);
+		for (int s = 0; s < segments.size(); s++) {
+			Segment segment = segments.get(s);
 			VertexFormat format = segment.type.format();
 			VertexConsumer target = buffers.getBuffer(segment.type);
 			// ponytail: only the first buffer is checked, an entity's buffers all come from one source

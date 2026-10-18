@@ -25,6 +25,8 @@ public class MicroOptsFeature extends Feature {
 	public boolean fastCubes;
 	// 1.21.4: a spawner's mob drawn once, then replayed
 	public boolean spawnerMobMesh;
+	// 1.21.1 with Create: a factory gauge's arrow path drawn once, then replayed
+	public boolean createPaths;
 
 	@Override
 	public void refresh() {
@@ -35,5 +37,6 @@ public class MicroOptsFeature extends Feature {
 		sharedItemBounds = flag("micro_opts.shared_item_bounds", value);
 		fastCubes = flag("micro_opts.fast_cubes", true);
 		spawnerMobMesh = flag("micro_opts.spawner_mob_mesh", true);
+		createPaths = flag("micro_opts.create_paths", value);
 	}
 }

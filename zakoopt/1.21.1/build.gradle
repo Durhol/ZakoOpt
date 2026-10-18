@@ -34,3 +34,19 @@ def neoJar = tasks.register('neoJar', Jar) {
 	exclude 'fabric.mod.json'
 }
 tasks.named('build') { dependsOn neoJar }
+
+// Create's NeoForge jar is on Mojang names; its catnip and Flywheel classes come nested in it, so they are unpacked next to it
+configurations { createMod }
+dependencies {
+	createMod("maven.modrinth:create:6.0.10+mc1.21.1") { transitive = false }
+}
+def createLibs = tasks.register('createLibs', Copy) {
+	from configurations.createMod
+	from({ configurations.createMod.collect { zipTree(it).matching { include 'META-INF/jarjar/*.jar' } } }) { eachFile { path = name } }
+	includeEmptyDirs = false
+	into layout.buildDirectory.dir('create-libs')
+}
+dependencies {
+	compileOnly fileTree(layout.buildDirectory.dir('create-libs')) { include '*.jar' }
+}
+tasks.named('compileJava') { dependsOn createLibs }

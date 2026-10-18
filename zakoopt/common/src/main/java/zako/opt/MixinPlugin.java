@@ -6,6 +6,7 @@ import org.spongepowered.asm.mixin.extensibility.IMixinInfo;
 
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Stream;
 
 // mixins into Sodium's own classes are added only when Sodium is installed; each is built only for some versions
 public class MixinPlugin implements IMixinConfigPlugin {
@@ -24,6 +25,9 @@ public class MixinPlugin implements IMixinConfigPlugin {
 	private static final List<String> NEOFORGE_ONLY = List.of("block.NeoBlockEntityRenderDispatcherMixin", "block.NeoLevelRendererCrackMixin");
 	public static final List<String> SODIUM_MIXINS = List.of("entity.SodiumEntityRendererMixin", "gl.VertexConsumerUtilsMixin", "block.NonTerrainBlockRenderContextMixin",
 			"gl.LunarSodiumMultiDrawMixin", "gl.SodiumOcclusionCullMixin", "gl.SodiumTerrainTimerMixin", "block.SodiumLeafCullMixin", "block.SodiumLeafCullOldMixin", "block.SodiumFarLeavesMixin", "gl.SodiumCubicSamplerMixin");
+	// Create's renderers, on NeoForge only: Create's Fabric port is not the code these were written against
+	public static final boolean CREATE = NEOFORGE && Platform.isModLoaded("create");
+	private static final List<String> CREATE_MIXINS = List.of("block.CreateFactoryPanelMixin");
 	// Sodium writes model cubes its own fast way; ours stands in where it is missing
 	private static final List<String> NO_SODIUM_MIXINS = List.of("entity.ModelPartFastMixin");
 	// the immediate ring lives in OpenGL buffers; VulkanMod draws without them and rewrites RenderType.draw
@@ -32,17 +36,18 @@ public class MixinPlugin implements IMixinConfigPlugin {
 	// a Sodium class only some releases have: its mixin would log a missing target on all the others
 	private static final String OLD_LEAF_CULL_TARGET = "net/caffeinemc/mods/sodium/client/render/chunk/compile/pipeline/BlockOcclusionCache.class";
 
-	private static boolean sodiumAdded;
+	private static boolean modsAdded;
 
-	// every config uses this plugin: only the first one asked gets the Sodium mixins
+	// every config uses this plugin: only the first one asked gets the Sodium and Create mixins
 	@Override
 	public List<String> getMixins() {
-		if (!SODIUM || sodiumAdded) {
+		if (modsAdded) {
 			return null;
 		}
-		sodiumAdded = true;
-		return SODIUM_MIXINS.stream().filter(m -> built(m) && (LUNAR || !LUNAR_MIXINS.contains(m))
-				&& (!m.equals("block.SodiumLeafCullOldMixin") || MixinPlugin.class.getClassLoader().getResource(OLD_LEAF_CULL_TARGET) != null)).toList();
+		modsAdded = true;
+		return Stream.concat(SODIUM ? SODIUM_MIXINS.stream().filter(m -> (LUNAR || !LUNAR_MIXINS.contains(m))
+				&& (!m.equals("block.SodiumLeafCullOldMixin") || MixinPlugin.class.getClassLoader().getResource(OLD_LEAF_CULL_TARGET) != null)) : Stream.empty(),
+				CREATE ? CREATE_MIXINS.stream() : Stream.empty()).filter(MixinPlugin::built).toList();
 	}
 
 	public static boolean built(String mixin) {
@@ -50,7 +55,7 @@ public class MixinPlugin implements IMixinConfigPlugin {
 	}
 
 	public static boolean applies(String mixin) {
-		return built(mixin) && (SODIUM || !SODIUM_MIXINS.contains(mixin)) && !(SODIUM && NO_SODIUM_MIXINS.contains(mixin)) && !(VULKAN && openGl(mixin))
+		return built(mixin) && (SODIUM || !SODIUM_MIXINS.contains(mixin)) && (CREATE || !CREATE_MIXINS.contains(mixin)) && !(SODIUM && NO_SODIUM_MIXINS.contains(mixin)) && !(VULKAN && openGl(mixin))
 				&& (LUNAR || !LUNAR_MIXINS.contains(mixin)) && !(LUNAR && NO_LUNAR_MIXINS.contains(mixin)) && !(NEOFORGE && NEOFORGE_OFF.contains(mixin)) && (NEOFORGE || !NEOFORGE_ONLY.contains(mixin)) && !(POLYDIUM && mixin.equals("entity.ModelResetPoseMixin"));
 	}
 
