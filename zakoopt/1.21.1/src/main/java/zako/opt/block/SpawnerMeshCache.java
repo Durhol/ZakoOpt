@@ -104,16 +104,18 @@ public class SpawnerMeshCache {
 			// in runs that fit the 64 KB MemoryStack, whole quads or triangles each: a big block item's model alone can overflow it
 			int run = Math.max(12, CHUNK / stride / 12 * 12);
 			if (shift && target instanceof ReserveBuffer reserve && reserve.zakoopt$accepts(format)) {
-				// straight into the buffer's own memory: one copy instead of a stack copy and Sodium's push copying it again
+				// straight into the buffer's own memory: one copy instead of a stack copy and Sodium's push copying it again. The
+				// buffer may be mapped GPU memory (the immediate ring), slow to read back: the shift reads the mesh, it only writes there
 				int size = segment.count * stride;
+				long src = MemoryUtil.memAddress(segment.vertices);
 				long dst = reserve.zakoopt$address(reserve.zakoopt$reserve(segment.count));
-				MemoryUtil.memCopy(MemoryUtil.memAddress(segment.vertices), dst, size);
-				for (long v = dst + at, end = dst + size; v < end; v += stride) {
-					MemoryUtil.memPutFloat(v, MemoryUtil.memGetFloat(v) + tx);
-					MemoryUtil.memPutFloat(v + 4, MemoryUtil.memGetFloat(v + 4) + ty);
-					MemoryUtil.memPutFloat(v + 8, MemoryUtil.memGetFloat(v + 8) + tz);
-					if (uv2 >= 0 && MemoryUtil.memGetInt(v - at + uv2) == LIGHT_MARK) {
-						MemoryUtil.memPutInt(v - at + uv2, light);
+				MemoryUtil.memCopy(src, dst, size);
+				for (long o = at; o < size; o += stride) {
+					MemoryUtil.memPutFloat(dst + o, MemoryUtil.memGetFloat(src + o) + tx);
+					MemoryUtil.memPutFloat(dst + o + 4, MemoryUtil.memGetFloat(src + o + 4) + ty);
+					MemoryUtil.memPutFloat(dst + o + 8, MemoryUtil.memGetFloat(src + o + 8) + tz);
+					if (uv2 >= 0 && MemoryUtil.memGetInt(src + o - at + uv2) == LIGHT_MARK) {
+						MemoryUtil.memPutInt(dst + o - at + uv2, light);
 					}
 				}
 				continue;
