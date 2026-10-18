@@ -12,7 +12,6 @@ import zako.opt.mixin.block.CreateBoundTickerAccessor;
 import zako.opt.mixin.block.CreateRebindableTickerAccessor;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.WeakHashMap;
@@ -22,7 +21,9 @@ import java.util.WeakHashMap;
 @UtilityClass
 public class CreateFarTickers {
 	private final Map<Level, List<TickingBlockEntity>> PARKED = new WeakHashMap<>();
-	private int clock;
+	// a slice of each list a tick, a full round a second: a whole pass at once was itself a spike in the tick frame
+	private final int ROUND = 20;
+	private int cursor, parkedCursor;
 
 	public void sweep(Level level, List<TickingBlockEntity> tickers) {
 		List<TickingBlockEntity> parked = PARKED.computeIfAbsent(level, l -> new ArrayList<>());
@@ -33,24 +34,27 @@ public class CreateFarTickers {
 			}
 			return;
 		}
-		// ponytail: a sweep each quarter second; flying in, a machine wakes at most 5 ticks late, inside the margin past 64 blocks
-		if (++clock % 5 != 0) {
-			return;
-		}
 		Minecraft mc = Minecraft.getInstance();
 		Vec3 cam = mc.gameRenderer.getMainCamera().getPosition();
 		double far = Features.CREATE_FAR_TICK.distance;
 		double view = mc.options.getEffectiveRenderDistance() * 16 + 32;
-		for (Iterator<TickingBlockEntity> it = parked.iterator(); it.hasNext(); ) {
-			TickingBlockEntity t = it.next();
-			if (t.isRemoved()) {
-				it.remove();
-			} else if (!far(t.getPos(), cam, far, view)) {
-				tickers.add(t);
-				it.remove();
-			}
+		List<TickingBlockEntity> woken = new ArrayList<>();
+		parkedCursor = slice(parked, parkedCursor, t -> t.isRemoved() || !far(t.getPos(), cam, far, view) && woken.add(t));
+		cursor = slice(tickers, cursor, t -> !t.isRemoved() && create(t) && far(t.getPos(), cam, far, view) && parked.add(t));
+		tickers.addAll(woken);
+	}
+
+	// removeIf on a sublist shifts the tail once for the whole slice; returns where the next slice starts
+	private int slice(List<TickingBlockEntity> list, int from, java.util.function.Predicate<TickingBlockEntity> take) {
+		int size = list.size();
+		if (from >= size) {
+			from = 0;
 		}
-		tickers.removeIf(t -> !t.isRemoved() && create(t) && far(t.getPos(), cam, far, view) && parked.add(t));
+		int to = Math.min(size, from + Math.max(32, size / ROUND));
+		List<TickingBlockEntity> part = list.subList(from, to);
+		int before = part.size();
+		part.removeIf(take);
+		return to - (before - part.size());
 	}
 
 	// Sable keeps sub-level blocks in plots far past the view distance: those stay in the list
