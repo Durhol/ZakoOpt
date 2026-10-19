@@ -78,6 +78,7 @@ public class ZakoOptScreen extends Panel {
 			case PARTICLES -> Items.GLOWSTONE_DUST;
 			case INTERFACE -> Items.NAME_TAG;
 			case MEMORY -> Items.CHEST;
+			case CREATE -> Items.PISTON;
 		};
 	}
 
