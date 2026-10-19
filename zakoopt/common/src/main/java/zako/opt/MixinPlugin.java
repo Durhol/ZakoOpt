@@ -13,6 +13,9 @@ public class MixinPlugin implements IMixinConfigPlugin {
 	public static final boolean VULKAN = Platform.isModLoaded("vulkanmod");
 	// Polydium wraps the List.iterator() call our overwrite removes, and its config requires every injection
 	public static final boolean POLYDIUM = Platform.isModLoaded("polydium");
+	// AsyncParticles renders the particle queues itself, off the render thread
+	public static final boolean ASYNC_PARTICLES = Platform.isModLoaded("asyncparticles");
+	private static final List<String> PARTICLE_MIXINS = List.of("particle.ParticleEngineParallelMixin", "particle.QuadParticleGroupMixin");
 	// Lunar is no Fabric mod: its launcher class is the tell
 	public static final boolean LUNAR = MixinPlugin.class.getClassLoader().getResource("com/moonsworth/lunar/genesis/Genesis.class") != null;
 	private static final List<String> LUNAR_MIXINS = List.of("gl.LunarMultiDrawMixin", "gl.LunarSodiumMultiDrawMixin", "block.BlockEntityRenderDispatcherCullMixin");
@@ -51,7 +54,8 @@ public class MixinPlugin implements IMixinConfigPlugin {
 
 	public static boolean applies(String mixin) {
 		return built(mixin) && (SODIUM || !SODIUM_MIXINS.contains(mixin)) && !(SODIUM && NO_SODIUM_MIXINS.contains(mixin)) && !(VULKAN && openGl(mixin))
-				&& (LUNAR || !LUNAR_MIXINS.contains(mixin)) && !(LUNAR && NO_LUNAR_MIXINS.contains(mixin)) && !(NEOFORGE && NEOFORGE_OFF.contains(mixin)) && (NEOFORGE || !NEOFORGE_ONLY.contains(mixin)) && !(POLYDIUM && mixin.equals("entity.ModelResetPoseMixin"));
+				&& (LUNAR || !LUNAR_MIXINS.contains(mixin)) && !(LUNAR && NO_LUNAR_MIXINS.contains(mixin)) && !(NEOFORGE && NEOFORGE_OFF.contains(mixin)) && (NEOFORGE || !NEOFORGE_ONLY.contains(mixin)) && !(POLYDIUM && mixin.equals("entity.ModelResetPoseMixin"))
+				&& !(ASYNC_PARTICLES && PARTICLE_MIXINS.contains(mixin));
 	}
 
 	// the HUD cache draws into its own OpenGL framebuffer, which flickers under VulkanMod; the chat batch is plain GuiGraphics;
@@ -67,7 +71,8 @@ public class MixinPlugin implements IMixinConfigPlugin {
 	public boolean shouldApplyMixin(String targetClassName, String mixinClassName) {
 		String mixin = mixinClassName.substring("zako.opt.mixin.".length());
 		return !(VULKAN && openGl(mixin)) && !(SODIUM && NO_SODIUM_MIXINS.contains(mixin)) && (LUNAR || !LUNAR_MIXINS.contains(mixin))
-				&& !(LUNAR && NO_LUNAR_MIXINS.contains(mixin)) && !(NEOFORGE && NEOFORGE_OFF.contains(mixin)) && (NEOFORGE || !NEOFORGE_ONLY.contains(mixin)) && !(POLYDIUM && mixin.equals("entity.ModelResetPoseMixin"));
+				&& !(LUNAR && NO_LUNAR_MIXINS.contains(mixin)) && !(NEOFORGE && NEOFORGE_OFF.contains(mixin)) && (NEOFORGE || !NEOFORGE_ONLY.contains(mixin)) && !(POLYDIUM && mixin.equals("entity.ModelResetPoseMixin"))
+				&& !(ASYNC_PARTICLES && PARTICLE_MIXINS.contains(mixin));
 	}
 
 	@Override
