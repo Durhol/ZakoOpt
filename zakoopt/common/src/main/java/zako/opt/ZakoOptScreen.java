@@ -108,7 +108,8 @@ public class ZakoOptScreen extends Panel {
 		boolean overCompare = button(c, bx, y0 + 4, buttonWidth(compare), compare, BUTTON, BUTTON_FRAME, !Bench.running(),
 				() -> {
 					if (inWorld) {
-						UpdateUi.setScreen(new MonitorScreen());
+						MonitorScreen.show();
+						UpdateUi.setScreen(null);
 					} else {
 						Bench.compare(this);
 					}

@@ -2,6 +2,7 @@ package zako.opt;
 
 import lombok.experimental.UtilityClass;
 import net.minecraft.client.KeyMapping;
+import net.minecraft.client.gui.screens.Screen;
 import zako.opt.mixin.KeyMappingCategoryAccessor;
 
 import java.util.Collections;
@@ -17,5 +18,9 @@ public class ZakoKey {
 		Map<String, Integer> order = KeyMappingCategoryAccessor.zakoopt$order();
 		order.putIfAbsent(CATEGORY, Collections.max(order.values()) + 1);
 		return new KeyMapping("key.zakoopt.monitor", 295, CATEGORY);
+	}
+
+	public boolean shift() {
+		return Screen.hasShiftDown();
 	}
 }

@@ -97,6 +97,14 @@ public abstract class PanelScreen extends Screen {
 		}, mouseX, mouseY);
 	}
 
+	// drawn over the HUD without being the open screen
+	public void drawOver(GuiGraphicsExtractor graphics) {
+		if (width != graphics.guiWidth() || height != graphics.guiHeight()) {
+			ScreenInit.init(this, graphics.guiWidth(), graphics.guiHeight());
+		}
+		extractRenderState(graphics, -1, -1, 0);
+	}
+
 	@Override
 	public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
 		// 26.3 numbers buttons the SDL way, left is 1 there; Panel takes 0 as left

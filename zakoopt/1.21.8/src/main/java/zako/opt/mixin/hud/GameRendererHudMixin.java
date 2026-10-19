@@ -17,6 +17,7 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import zako.opt.bench.MonitorScreen;
 import zako.opt.hud.HudCache;
 
 @Mixin(GameRenderer.class)
@@ -65,6 +66,9 @@ public class GameRendererHudMixin {
 	@WrapOperation(method = "render", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/render/GuiRenderer;render(Lcom/mojang/blaze3d/buffers/GpuBufferSlice;)V"))
 	private void zakoopt$drawHud(GuiRenderer renderer, GpuBufferSlice fog, Operation<Void> original, DeltaTracker deltaTracker, boolean renderLevel) {
 		if (!HudCache.active()) {
+			if (MonitorScreen.shown() != null && !minecraft.options.hideGui) {
+				MonitorScreen.shown().drawOver(new GuiGraphics(minecraft, guiRenderState));
+			}
 			original.call(renderer, fog);
 			return;
 		}
@@ -76,6 +80,9 @@ public class GameRendererHudMixin {
 			GuiInvoker gui = (GuiInvoker) minecraft.gui;
 			gui.zakoopt$renderCameraOverlays(graphics, deltaTracker);
 			gui.zakoopt$renderCrosshair(graphics, deltaTracker);
+			if (MonitorScreen.shown() != null) {
+				MonitorScreen.shown().drawOver(graphics);
+			}
 			original.call(renderer, fog);
 		}
 		HudCache.composite();

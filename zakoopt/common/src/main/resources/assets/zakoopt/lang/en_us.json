@@ -137,7 +137,7 @@
   "key.zakoopt.monitor": "ZakoOpt in-game panel",
   "key.category.zakoopt.zakoopt": "ZakoOpt",
   "zakoopt.monitor.button": "Monitor",
-  "zakoopt.monitor.hint": "Esc to close",
+  "zakoopt.monitor.hint": "%s hides it, Shift+%s switches ZakoOpt",
   "zakoopt.monitor.tooltip": "FPS, load and memory over your world, with the mod switch. Key: %s.",
   "zakoopt.bench.title": "ZakoOpt tuning",
   "zakoopt.bench.start": "Start",
