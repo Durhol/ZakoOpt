@@ -12,6 +12,7 @@ import java.util.ArrayDeque;
 @UtilityClass
 public class RingBuilders {
 	private final int DEFAULT_SIZE = 64 << 10;
+	private final int MAX_SIZE = 16 << 20;
 	// primitive values: the lookup ran per lease and boxed its default every time
 	private final Reference2IntOpenHashMap<RenderType> SIZES = new Reference2IntOpenHashMap<>();
 	// closed ring builders handed back on the render thread, attached again instead of making a new one per lease
@@ -32,6 +33,11 @@ public class RingBuilders {
 			return null;
 		}
 		int size = SIZES.getOrDefault(type, DEFAULT_SIZE);
+		// a type that outgrew the ring would grow out of it every frame, copying all it wrote back out of write-combined GPU
+		// memory (17 FPS at a wall of factory gauges): it gets a plain builder instead
+		if (size > MAX_SIZE) {
+			return null;
+		}
 		long address = ImmediateRing.reserveBuilder(type.format(), size);
 		if (address == 0) {
 			return null;
@@ -55,6 +61,6 @@ public class RingBuilders {
 	}
 
 	public void remember(RenderType type, long size) {
-		SIZES.put(type, (int) Math.min(size, 16 << 20));
+		SIZES.put(type, (int) Math.min(size, Integer.MAX_VALUE));
 	}
 }
