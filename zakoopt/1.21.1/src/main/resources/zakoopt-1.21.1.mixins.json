@@ -25,6 +25,7 @@
 		"entity.ModelPartCubeAccessor",
 		"entity.ModelPartCubeMixin",
 		"entity.ModelPartFastMixin",
+		"entity.ParrotOnShoulderLayerMixin",
 		"entity.PoseAccessor",
 		"gl.BufferBuilderReserveMixin",
 		"gl.BufferUploaderMixin",

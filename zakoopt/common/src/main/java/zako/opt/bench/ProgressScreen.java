@@ -6,7 +6,8 @@ import zako.opt.Canvas;
 import zako.opt.DebugToggle;
 import zako.opt.Panel;
 import zako.opt.ZakoOptConfig;
-import zako.opt.gl.GpuTimers;
+
+import java.lang.management.ManagementFactory;
 
 // what the benchmark is doing, how far along and how the frames go, in a panel at the left over the scene; Esc cancels
 public class ProgressScreen extends Panel {
@@ -24,7 +25,7 @@ public class ProgressScreen extends Panel {
 	private static final Component CPU = Component.translatable("zakoopt.bench.cpu"), GPU = Component.translatable("zakoopt.bench.gpu");
 	private static final Component MEMORY_TITLE = Component.translatable("zakoopt.bench.memory.title");
 	private static final Component NONE = Component.literal("—");
-	private static long lastLoad, painted;
+	private static long lastLoad, painted, lastCpuNs;
 	private static double cpu = -1, gpu = -1;
 	private static Component cpuText = NONE, gpuText = NONE;
 
@@ -115,10 +116,12 @@ public class ProgressScreen extends Panel {
 		if (now - lastLoad < LOAD_NS) {
 			return;
 		}
+		// the render thread's share of one core: the frame waits on that thread, and a process average over every core reads 2% while it is full
+		long cpuNs = ManagementFactory.getThreadMXBean().getCurrentThreadCpuTime();
+		cpu = lastLoad == 0 || lastCpuNs <= 0 || cpuNs < 0 ? -1 : (cpuNs - lastCpuNs) * 100.0 / (now - lastLoad);
+		lastCpuNs = cpuNs;
 		lastLoad = now;
-		// the whole process against every core of the machine; negative until the OS has a first sample
-		cpu = MemoryGraph.OS == null ? -1 : MemoryGraph.OS.getProcessCpuLoad() * 100;
-		gpu = GpuTimers.utilization();
+		gpu = GpuLoad.get();
 		cpuText = percentText(cpu);
 		gpuText = percentText(gpu);
 	}

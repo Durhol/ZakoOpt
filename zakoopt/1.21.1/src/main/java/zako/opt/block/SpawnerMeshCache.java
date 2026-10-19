@@ -7,17 +7,21 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import com.mojang.blaze3d.vertex.VertexFormatElement;
+import lombok.RequiredArgsConstructor;
 import lombok.experimental.UtilityClass;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.entity.EntityRenderDispatcher;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
+import org.joml.Matrix3f;
 import org.joml.Matrix4f;
+import org.joml.Matrix4fc;
 import org.joml.Vector3f;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
 import zako.opt.gl.RawVertices;
+import zako.opt.gl.ReserveBuffer;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -26,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.WeakHashMap;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
 // the mob spinning in a spawner is a full entity render per spawner per frame, yet it never moves: it is drawn once in
 // its own space and replayed through the spawner's pose, positions and normals, with the light swapped in. Lost: the
@@ -34,12 +39,13 @@ import java.util.function.BiConsumer;
 public class SpawnerMeshCache {
 	// a packed light vanilla never produces, so emissive parts (spider eyes) keep their own light
 	private final int LIGHT_MARK = 0x00370013;
+	private final int CHUNK = 16384;
 	private final ByteBufferBuilder SCRATCH = new ByteBufferBuilder(16384);
 	private final Map<Entity, Mesh> CACHE = new WeakHashMap<>();
 
 	// positions and normals shared by several vertices (a box's 24 corners are 8, its 4 vertices per face share a normal)
 	// go through the matrices once, as Sodium's cuboid writer does
-	private record Segment(RenderType type, ByteBuffer vertices, int count, float[] positions, int[] positionIndex, int[] normals, int[] normalIndex) {
+	public record Segment(RenderType type, ByteBuffer vertices, int count, float[] positions, int[] positionIndex, int[] normals, int[] normalIndex) {
 	}
 
 	private record Mesh(Object renderer, List<Segment> segments) {
@@ -51,26 +57,40 @@ public class SpawnerMeshCache {
 		Object renderer = dispatcher.getRenderer(entity);
 		Mesh mesh = CACHE.get(entity);
 		if (mesh == null || mesh.renderer != renderer) {
-			Recorder recorder = new Recorder();
-			try {
-				record.accept(recorder, LIGHT_MARK);
-			} finally {
-				recorder.flush();
-			}
-			mesh = new Mesh(renderer, recorder.segments);
+			mesh = new Mesh(renderer, record(recorder -> record.accept(recorder, LIGHT_MARK)));
 			CACHE.put(entity, mesh);
 		}
-		return emit(mesh, poseStack.last(), buffers, light);
+		return emit(mesh.segments, poseStack.last(), buffers, light);
+	}
+
+	// the draw goes into buffers that keep its vertices, one segment per run of the same render type
+	public List<Segment> record(Consumer<MultiBufferSource> draw) {
+		return record(draw, false);
+	}
+
+	// owned: the vertices live in memAlloc'd memory the caller hands back to free(); the spawner's meshes go with their entity instead
+	public List<Segment> record(Consumer<MultiBufferSource> draw, boolean owned) {
+		Recorder recorder = new Recorder(owned);
+		try {
+			draw.accept(recorder);
+		} finally {
+			recorder.flush();
+		}
+		return recorder.segments;
 	}
 
 	private float[] positions = new float[0];
 	private int[] normals = new int[0];
 
-	private boolean emit(Mesh mesh, PoseStack.Pose pose, MultiBufferSource buffers, int light) {
+	public boolean emit(List<Segment> segments, PoseStack.Pose pose, MultiBufferSource buffers, int light) {
 		Matrix4f matrix = pose.pose();
 		Vector3f tmp = new Vector3f();
-		for (int s = 0; s < mesh.segments.size(); s++) {
-			Segment segment = mesh.segments.get(s);
+		// a block entity's pose only moves: positions shift in place and the recorded normals stand as they are
+		Matrix3f n3 = pose.normal();
+		boolean shift = (matrix.properties() & Matrix4fc.PROPERTY_TRANSLATION) != 0 && n3.m00() == 1.0F && n3.m11() == 1.0F && n3.m22() == 1.0F;
+		float tx = matrix.m30(), ty = matrix.m31(), tz = matrix.m32();
+		for (int s = 0; s < segments.size(); s++) {
+			Segment segment = segments.get(s);
 			VertexFormat format = segment.type.format();
 			VertexConsumer target = buffers.getBuffer(segment.type);
 			// ponytail: only the first buffer is checked, an entity's buffers all come from one source
@@ -81,7 +101,44 @@ public class SpawnerMeshCache {
 			int at = format.getOffset(VertexFormatElement.POSITION);
 			int uv2 = format.contains(VertexFormatElement.UV2) ? format.getOffset(VertexFormatElement.UV2) : -1;
 			int normal = format.contains(VertexFormatElement.NORMAL) ? format.getOffset(VertexFormatElement.NORMAL) : -1;
-			int size = segment.count * stride;
+			// in runs that fit the 64 KB MemoryStack, whole quads or triangles each: a big block item's model alone can overflow it
+			int run = Math.max(12, CHUNK / stride / 12 * 12);
+			if (shift && target instanceof ReserveBuffer reserve && reserve.zakoopt$accepts(format)) {
+				// straight into the buffer's own memory: one copy instead of a stack copy and Sodium's push copying it again. The
+				// buffer may be mapped GPU memory (the immediate ring), slow to read back: the shift reads the mesh, it only writes there
+				int size = segment.count * stride;
+				long src = MemoryUtil.memAddress(segment.vertices);
+				long dst = reserve.zakoopt$address(reserve.zakoopt$reserve(segment.count));
+				MemoryUtil.memCopy(src, dst, size);
+				for (long o = at; o < size; o += stride) {
+					MemoryUtil.memPutFloat(dst + o, MemoryUtil.memGetFloat(src + o) + tx);
+					MemoryUtil.memPutFloat(dst + o + 4, MemoryUtil.memGetFloat(src + o + 4) + ty);
+					MemoryUtil.memPutFloat(dst + o + 8, MemoryUtil.memGetFloat(src + o + 8) + tz);
+					if (uv2 >= 0 && MemoryUtil.memGetInt(src + o - at + uv2) == LIGHT_MARK) {
+						MemoryUtil.memPutInt(dst + o - at + uv2, light);
+					}
+				}
+				continue;
+			}
+			if (shift) {
+				for (int first = 0; first < segment.count; first += run) {
+					int n = Math.min(run, segment.count - first);
+					try (MemoryStack stack = MemoryStack.stackPush()) {
+						long dst = stack.nmalloc(16, n * stride);
+						MemoryUtil.memCopy(MemoryUtil.memAddress(segment.vertices) + (long) first * stride, dst, (long) n * stride);
+						for (long v = dst + at, end = dst + (long) n * stride; v < end; v += stride) {
+							MemoryUtil.memPutFloat(v, MemoryUtil.memGetFloat(v) + tx);
+							MemoryUtil.memPutFloat(v + 4, MemoryUtil.memGetFloat(v + 4) + ty);
+							MemoryUtil.memPutFloat(v + 8, MemoryUtil.memGetFloat(v + 8) + tz);
+							if (uv2 >= 0 && MemoryUtil.memGetInt(v - at + uv2) == LIGHT_MARK) {
+								MemoryUtil.memPutInt(v - at + uv2, light);
+							}
+						}
+						RawVertices.push(target, stack, dst, n, format);
+					}
+				}
+				continue;
+			}
 			if (positions.length < segment.positions.length) {
 				positions = new float[segment.positions.length];
 			}
@@ -99,23 +156,26 @@ public class SpawnerMeshCache {
 				pose.transformNormal((byte) packed / 127.0F, (byte) (packed >> 8) / 127.0F, (byte) (packed >> 16) / 127.0F, tmp);
 				normals[n] = normal(tmp.x) & 0xFF | (normal(tmp.y) & 0xFF) << 8 | (normal(tmp.z) & 0xFF) << 16 | packed & 0xFF000000;
 			}
-			try (MemoryStack stack = MemoryStack.stackPush()) {
-				long dst = stack.nmalloc(16, size);
-				MemoryUtil.memCopy(MemoryUtil.memAddress(segment.vertices), dst, size);
-				int i = 0;
-				for (long v = dst, end = dst + size; v < end; v += stride, i++) {
-					int p = segment.positionIndex[i] * 3;
-					MemoryUtil.memPutFloat(v + at, positions[p]);
-					MemoryUtil.memPutFloat(v + at + 4, positions[p + 1]);
-					MemoryUtil.memPutFloat(v + at + 8, positions[p + 2]);
-					if (uv2 >= 0 && MemoryUtil.memGetInt(v + uv2) == LIGHT_MARK) {
-						MemoryUtil.memPutInt(v + uv2, light);
+			for (int first = 0; first < segment.count; first += run) {
+				int n = Math.min(run, segment.count - first);
+				try (MemoryStack stack = MemoryStack.stackPush()) {
+					long dst = stack.nmalloc(16, n * stride);
+					MemoryUtil.memCopy(MemoryUtil.memAddress(segment.vertices) + (long) first * stride, dst, (long) n * stride);
+					int i = first;
+					for (long v = dst, end = dst + (long) n * stride; v < end; v += stride, i++) {
+						int p = segment.positionIndex[i] * 3;
+						MemoryUtil.memPutFloat(v + at, positions[p]);
+						MemoryUtil.memPutFloat(v + at + 4, positions[p + 1]);
+						MemoryUtil.memPutFloat(v + at + 8, positions[p + 2]);
+						if (uv2 >= 0 && MemoryUtil.memGetInt(v + uv2) == LIGHT_MARK) {
+							MemoryUtil.memPutInt(v + uv2, light);
+						}
+						if (normal >= 0) {
+							MemoryUtil.memPutInt(v + normal, normals[segment.normalIndex[i]]);
+						}
 					}
-					if (normal >= 0) {
-						MemoryUtil.memPutInt(v + normal, normals[segment.normalIndex[i]]);
-					}
+					RawVertices.push(target, stack, dst, n, format);
 				}
-				RawVertices.push(target, stack, dst, segment.count, format);
 			}
 		}
 		return true;
@@ -159,8 +219,16 @@ public class SpawnerMeshCache {
 	}
 
 	// one segment per run of draws into the same render type, as the vanilla buffer source would see them
+	public void free(List<Segment> segments) {
+		for (Segment segment : segments) {
+			MemoryUtil.memFree(segment.vertices);
+		}
+	}
+
+	@RequiredArgsConstructor
 	private static final class Recorder implements MultiBufferSource {
 		final List<Segment> segments = new ArrayList<>();
+		final boolean owned;
 		RenderType type;
 		BufferBuilder builder;
 
@@ -181,7 +249,7 @@ public class SpawnerMeshCache {
 			try (MeshData mesh = builder.build()) {
 				if (mesh != null) {
 					ByteBuffer src = mesh.vertexBuffer();
-					ByteBuffer copy = ByteBuffer.allocateDirect(src.remaining());
+					ByteBuffer copy = owned ? MemoryUtil.memAlloc(src.remaining()) : ByteBuffer.allocateDirect(src.remaining());
 					MemoryUtil.memCopy(MemoryUtil.memAddress(src), MemoryUtil.memAddress(copy), src.remaining());
 					segments.add(index(type, copy, mesh.drawState().vertexCount()));
 				}
