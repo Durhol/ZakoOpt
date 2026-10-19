@@ -99,6 +99,14 @@ public abstract class PanelScreen extends Screen {
 		}, mouseX, mouseY);
 	}
 
+	// drawn over the HUD without being the open screen
+	public void drawOver(GuiGraphics graphics) {
+		if (width != graphics.guiWidth() || height != graphics.guiHeight()) {
+			ScreenInit.init(this, graphics.guiWidth(), graphics.guiHeight());
+		}
+		render(graphics, -1, -1, 0);
+	}
+
 	@Override
 	public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
 		return click(event.x(), event.y(), event.button()) || super.mouseClicked(event, doubleClick);

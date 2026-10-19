@@ -137,7 +137,7 @@
   "key.zakoopt.monitor": "Окно ZakoOpt в игре",
   "key.category.zakoopt.zakoopt": "ZakoOpt",
   "zakoopt.monitor.button": "Монитор",
-  "zakoopt.monitor.hint": "Esc — закрыть",
+  "zakoopt.monitor.hint": "%s — скрыть, Shift+%s — вкл/выкл ZakoOpt",
   "zakoopt.monitor.tooltip": "FPS, нагрузка и память поверх мира и переключатель мода. Клавиша: %s.",
   "zakoopt.bench.title": "Подбор настроек ZakoOpt",
   "zakoopt.bench.start": "Начать",

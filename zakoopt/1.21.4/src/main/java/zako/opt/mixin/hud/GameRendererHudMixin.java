@@ -10,9 +10,11 @@ import net.minecraft.client.renderer.GameRenderer;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import zako.opt.bench.MonitorScreen;
 import zako.opt.hud.HudCache;
 
 @Mixin(GameRenderer.class)
@@ -31,6 +33,7 @@ public class GameRendererHudMixin {
 	private void zakoopt$hud(Gui gui, GuiGraphics graphics, DeltaTracker deltaTracker, Operation<Void> original) {
 		if (!HudCache.active()) {
 			original.call(gui, graphics, deltaTracker);
+			zakoopt$monitor(graphics);
 			return;
 		}
 		graphics.flush();
@@ -52,5 +55,15 @@ public class GameRendererHudMixin {
 			graphics.flush();
 		}
 		HudCache.composite();
+		zakoopt$monitor(graphics);
+	}
+
+	// over the HUD, after the cached HUD is composited
+	@Unique
+	private static void zakoopt$monitor(GuiGraphics graphics) {
+		MonitorScreen monitor = MonitorScreen.shown();
+		if (monitor != null && !Minecraft.getInstance().options.hideGui) {
+			monitor.drawOver(graphics);
+		}
 	}
 }
