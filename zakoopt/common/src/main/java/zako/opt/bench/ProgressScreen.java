@@ -32,9 +32,10 @@ public class ProgressScreen extends Panel {
 		super(Component.translatable("zakoopt.bench.title"));
 	}
 
-	// the GPU share is measured only while this panel is up; 26.3 moved the current screen, so the last paint tells
+	// the GPU share is measured only while this panel is up; 26.3 moved the current screen, so the last paint tells;
+	// a frame longer than this window is never counted
 	public static boolean open() {
-		return System.nanoTime() - painted < 200_000_000L;
+		return System.nanoTime() - painted < 2_000_000_000L;
 	}
 
 	protected Component stage() {
